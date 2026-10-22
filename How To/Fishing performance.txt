@@ -1,0 +1,55 @@
+FishingSystem performance
+
+FishingSystem.Update now selects active FishingAttemptComponent entities through
+the existing component index instead of copying all world entities every minute.
+GetFishers follows the established CookingSystem/InnSystem approach: compare
+indexed IDs and rebuild a world-ordered list only when active membership changes.
+Count plus ID checks detect equal-count replacements. Rebuilds scan the world;
+steady membership and an empty set of active fishers avoid that terrain scan.
+
+The stable list allows attempts to be removed and catches to create entities
+while processing. Preserving world order keeps the shared Random generator's
+catch and weight rolls assigned to the same fishers, even if attempts were
+attached in a different order. Only membership/order are cached. Attempts,
+tools, access, health, skill, water data, and inventories remain live. Current
+catch handlers do not start other fishing attempts during the update. This
+uses the existing single-thread simulation workflow without a new scheduler.
+
+StartFishing, Cancel, the update body, and catch/validation helpers are unchanged.
+Bait consumption/identity, randomized duration, species probabilities, skill
+locks, no-catch outcomes, weight ranges, and inventory storage keep their existing
+behavior. Program.cs, JSON, and registration are unchanged.
+
+Validation:
+- 30 seeded original/updated scenarios matched each fisher's duration, remaining
+  bait, pending state, species, and weights. Scenarios included reverse starts,
+  equal-count fisher replacement, simultaneous completions, later attempts,
+  death, lost rods, cancellation, and entity destruction.
+- Existing 95 map/gameplay, 27 survival AI, and 20 profiler checks passed.
+- An archived temporary fishing check failed at its old 360-minute maximum
+  expectation. Current RiverComponent.MaximumCatchMinutes is 240. The copied
+  original FishingSystem failed the identical assertion, confirming this is
+  a pre-existing outdated expectation, not a change introduced here. That
+  historical check was not modified, and its later assertions were not reached.
+- Source comparison confirmed StartFishing, Cancel, the update body, and all
+  existing catch/validation helpers unchanged.
+- Console build passed with 0 errors and 20 existing nullable warnings on initial
+  compilation. Output used a temporary folder; no running app was stopped.
+  No production tests were deleted or new test framework added.
+
+Controlled Debug benchmark: 22,500 empty terrain entities plus fishers, their
+rods/bait, and water. Three alternating original/updated pairs after warm-up;
+480 updates of valid attempts waiting at a fixed clock. Median milliseconds:
+  3 fishers: original 707.905; updated 1.721.
+  400 fishers: original 909.149; updated 171.003 (about 5.3 times faster).
+Original source was copied before editing. This measures steady pending-attempt
+updates, not initial membership rebuilds or complete 400-NPC gameplay.
+
+One-day village profile: 150x150 map, 3 residents, 1,440 game minutes.
+  Previous run: wall 9,263.54 ms; FishingSystem 1,759.94 ms.
+  Current run: wall 7,135.98 ms; FishingSystem 21.94 ms.
+Full-day samples include random gameplay and runtime variation; their entire
+wall-time difference cannot be attributed solely to this change. ProcessingSystem
+now leads the latest profile at 1,619.59 ms and remains future work.
+
+Files changed: FishingSystem.cs, this guide, and Fishing profile.txt.

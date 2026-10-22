@@ -1,0 +1,46 @@
+LeaseSystem performance
+
+LeaseSystem.Update now uses GetEntitiesWith<LandLeaseComponent>().ToList()
+instead of checking every world entity. The existing component index skips
+terrain without leases. ToList copies only leased entities because expiry
+removes LandLeaseComponent; enumerating that live index while removing entries
+would be unsafe. No cache, component, scheduler, or new system was added.
+
+The expiry condition, component removal, and notification text are unchanged.
+Lease removal does not remove OwnershipComponent, destroy land, or refund rent.
+Reattached/replaced leases are read on the next update without a separate cache.
+Component query order is not guaranteed, so simultaneous expiry messages may
+appear in a different order. Current expiry handling only changes its own
+entity, so gameplay does not depend on message order. Program.cs, settings,
+and simulation registration remain unchanged.
+
+Validation:
+- A temporary Simulation.Update workflow passed before/exact expiry boundaries,
+  multiple simultaneous removals, once-only notifications, ownership preservation,
+  lease reattachment, and destroyed land.
+- Existing 95 map/gameplay, 27 survival AI, and 20 profiler checks passed.
+- The source diff contains the indexed loop and explanatory XML/logic comments;
+  the existing expiry body remains unchanged.
+- Console build passed with 0 errors and 20 existing nullable warnings on initial
+  compilation, including the existing nullable lease warning. No warning cleanup
+  was included. Output used a temporary folder; no running app was stopped.
+  No production tests were deleted or new test framework added.
+
+Controlled Debug benchmark: 22,500 empty terrain entities plus leased entities,
+480 updates, three alternating original/updated pairs after warm-up. Time stayed
+fixed before expiry, avoiding console output. Median milliseconds:
+  3 leases: original 631.458; updated 0.359.
+  400 leases: original 679.056; updated 22.180 (about 30.6 times faster).
+Original source was copied before editing. These timings measure steady lease
+checks, not full 400-NPC gameplay or notification throughput during mass expiry.
+
+One-day village profile: 150x150 map, 3 residents, 1,440 game minutes.
+  Previous run: wall 3,890.66 ms; LeaseSystem 1,116.62 ms.
+  Current run: wall 2,880.04 ms; LeaseSystem 1.48 ms.
+The short village profile is not a heavy active-lease workload; the manual
+workflow and benchmark exercise actual leases separately. Full-day samples
+include random gameplay and runtime variation, so their entire wall-time
+difference cannot be attributed solely to this change. CooldownSystem now leads
+at 1,012.63 ms, followed by ManaRegenerationSystem at 1,005.52 ms.
+
+Files changed: LeaseSystem.cs, this guide, and Lease profile.txt.

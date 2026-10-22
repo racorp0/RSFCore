@@ -1,0 +1,182 @@
+// Held tools are separate from machinery. Cooking shares these tool IDs and the input planner; cooking meals remain in recipes.json.
+{
+  "items": [],
+  "tools": [
+    {
+      "id": "hand_sickle",
+      "name": "Hand Sickle"
+    },
+    {
+      "id": "cooking_utensils",
+      "name": "Cooking Utensils"
+    }
+  ],
+  "stations": [
+    {
+      "id": "village_campfire",
+      "stationType": "campfire",
+      "name": "Village Campfire",
+      "x": 14,
+      "y": 14
+    },
+    {
+      "id": "village_thresher",
+      "stationType": "thresher",
+      "name": "Village Thresher",
+      "x": 14,
+      "y": 10
+    },
+    {
+      "id": "village_seed_extractor",
+      "stationType": "seed_extractor",
+      "name": "Village Seed Extractor",
+      "x": 14,
+      "y": 12
+    }
+  ],
+  "recipes": [
+    {
+      "id": "thresh_rice",
+      "name": "Thresh Rice",
+      "inputs": [
+        {
+          "options": [
+            {
+              "itemId": "harvested_rice",
+              "quantity": 1
+            }
+          ]
+        }
+      ],
+      "tools": null,
+      "processingStation": "thresher",
+      "processingMinutes": 30,
+      "requiresOperator": true,
+      "requiredSkill": {
+        "id": "farming",
+        "minimumLevel": 1
+      },
+      "outputs": [
+        {
+          "options": [
+            {
+              "itemId": "rice_grain",
+              "name": "Rice Grain",
+              "minimumQuantity": 20,
+              "maximumQuantity": 20,
+              "sellPrice": 1,
+              "merchantStockTarget": 20,
+              "cookStockTarget": 20,
+              "chancePercent": 100
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "extract_rice_seeds",
+      "name": "Extract Rice Seeds",
+      "inputs": [
+        {
+          "options": [
+            {
+              "itemId": "harvested_rice",
+              "quantity": 1
+            }
+          ]
+        }
+      ],
+      "tools": null,
+      "processingStation": "seed_extractor",
+      "processingMinutes": 30,
+      "requiresOperator": false,
+      "requiredSkill": {
+        "id": "farming",
+        "minimumLevel": 1
+      },
+      "outputs": [
+        {
+          "options": [
+            {
+              "kind": "Seed",
+              "plantId": "rice",
+              "chancePercent": 100,
+              "minimumQuantity": 2,
+              "maximumQuantity": 5
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "extract_cabbage_seeds",
+      "name": "Extract Cabbage Seeds",
+      "inputs": [
+        {
+          "options": [
+            {
+              "itemId": "cabbage",
+              "quantity": 1
+            }
+          ]
+        }
+      ],
+      "tools": null,
+      "processingStation": "seed_extractor",
+      "processingMinutes": 30,
+      "requiresOperator": false,
+      "requiredSkill": {
+        "id": "farming",
+        "minimumLevel": 1
+      },
+      "outputs": [
+        {
+          "options": [
+            {
+              "kind": "Seed",
+              "plantId": "cabbage",
+              "chancePercent": 100,
+              "minimumQuantity": 2,
+              "maximumQuantity": 5
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "extract_tomato_seeds",
+      "name": "Extract Tomato Seeds",
+      "inputs": [
+        {
+          "options": [
+            {
+              "itemId": "tomato",
+              "quantity": 1
+            }
+          ]
+        }
+      ],
+      "tools": null,
+      "processingStation": "seed_extractor",
+      "processingMinutes": 30,
+      "requiresOperator": false,
+      "requiredSkill": {
+        "id": "farming",
+        "minimumLevel": 1
+      },
+      "outputs": [
+        {
+          "options": [
+            {
+              "kind": "Seed",
+              "plantId": "tomato",
+              "chancePercent": 100,
+              "minimumQuantity": 2,
+              "maximumQuantity": 5
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

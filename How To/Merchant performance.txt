@@ -1,0 +1,54 @@
+MerchantVisitSystem performance
+
+Visitor selection now uses the MerchantVisitComponent index. GetVisitors keeps
+a small world-ordered list, rebuilding only when membership changes. Count and
+ID checks detect equal-count replacements. A rebuild scans the world; unchanged
+membership and an empty visitor set avoid that scan. The list is still captured
+before Spawn, so new merchants are evaluated on the next update as before.
+
+World order matters because departure removes sale markers from inventory and
+can change trade opportunities for later visitors. The stable list follows the
+existing cooking/fishing approach. Only membership/order are cached; visit
+states, health, funds, inventories, prices, and demand remain live.
+
+HasUsefulTrade now queries HealthComponent instead of scanning all entities.
+Health was already required for each candidate, so this keeps eligible partners,
+including potential customers without inventories. This method only checks
+whether an opportunity exists; it does not choose or execute a trade. Its changed
+candidate order does not change that boolean result for the current rules.
+
+Arrival randomness, capacity counting, idle/max-visit limits, departure cleanup,
+AI wake-up, entrance checks, and archived cargo keep their existing code. One-time
+village discovery and GameSettings lookups remain unchanged. If no village ever
+exists, discovery still scans the world each update; that separate case was not
+optimized here. Program.cs, settings, and simulation registration are unchanged.
+
+Validation:
+- 30 seeded original/updated scenarios matched arrival times/counts, capacity,
+  next-arrival plans, visit flags/timestamps, sale cleanup, inn entitlement,
+  AI decision timestamps, departure counts, and entrance-only Leave results.
+  They included reverse visit attachment, membership changes, affordable fish,
+  bait demand, customer health/funds, destruction, and replacement arrivals.
+- Existing 95 map/gameplay, 27 survival AI, and 20 profiler checks passed.
+- Console build passed with 0 errors and 20 existing nullable warnings on initial
+  compilation. Output used a temporary folder; no running app was stopped.
+  No production tests were deleted or new test framework added.
+
+Controlled Debug benchmark: 22,500 empty terrain entities plus visitors,
+480 updates, three alternating original/updated pairs after warm-up. Time stayed
+fixed before idle checks or arrivals were due. Median milliseconds:
+  3 visitors: original 747.511; updated 0.495.
+  400 visitors: original 892.027; updated 64.791 (about 13.8 times faster).
+Original source was copied before editing. These timings measure steady visitor
+selection, not heavy idle-trade checks, membership rebuilds, or full NPC gameplay.
+
+One-day village profile: 150x150 map, 3 residents, 1,440 game minutes.
+  Previous run: wall 5,827.31 ms; MerchantVisitSystem 1,521.65 ms.
+  Current run: wall 3,890.66 ms; MerchantVisitSystem 8.05 ms.
+The short profile primarily measures waiting for infrequent arrivals; the seeded
+scenarios cover arrivals/departures separately. Full-day samples include random
+gameplay and runtime variation, so their entire wall-time difference cannot be
+attributed solely to this change. LeaseSystem now leads at 1,116.62 ms and remains
+future work.
+
+Files changed: MerchantVisitSystem.cs, this guide, and Merchant profile.txt.

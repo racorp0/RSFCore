@@ -1,0 +1,163 @@
+CURRENT COOKING SCHEMA: see How To/cooking phase 1.txt. recipes.json now uses
+shared-style inputs/options and weighted Meal outputs; older cooking fields below
+are historical. Cooking skill/taste progression remains a later phase.
+
+CURRENT PROCESSING: see How To/shared processing.txt. Processing recipes now live
+in processing.json and use input alternatives, weighted outputs, timed jobs, tools,
+skills, and machinery. Earlier immediate-processing examples below are historical.
+
+Adding plants and harvest outputs through JSON
+
+Every plant, including rice, now uses the same PlantDefinition, seed component,
+crop component, farming actions, and AI. There are no rice-specific blueprints,
+commands, crop components, or hardcoded crop/meal definitions in C#.
+Edit RSF.Console/Settings/farming.json, then run:
+  dotnet run --project RSF.Console/RSF.Console.csproj
+Settings load once on startup; --no-build skips copying changed source JSON files.
+Program.cs remains unchanged and lets NPC AI perform all gameplay actions.
+
+Example plant to add to the plants array
+{
+  "id": "pepper",
+  "name": "Pepper",
+  "type": "Vegetable",
+  "harvestMode": "Repeat",
+  "growthDays": 5,
+  "regrowthDays": 2,
+  "growthIntervalMinutes": 1440,
+  "wateringIntervalMinutes": 1440,
+  "seedsPerPlanting": 1,
+  "minimumHarvests": 2,
+  "maximumHarvests": 4,
+  "harvestOutputs": [
+    {
+      "itemId": "pepper_fruit",
+      "name": "Pepper",
+      "minimumQuantity": 1,
+      "maximumQuantity": 3,
+      "sellPrice": 3,
+      "merchantStockTarget": 10,
+      "cookStockTarget": 0
+    }
+  ],
+  "startingSeedsPerFarmer": 3,
+  "merchantSeeds": 20,
+  "seedStockTarget": 3,
+  "seedPrice": 2,
+  "preferredPlotsPerFarmer": 1
+}
+
+IDs and output quantities
+- id identifies the planted species; itemId identifies what it produces. They
+  can differ: the rice plant harvests harvested_rice, which processes into rice_grain.
+- name is the visible item or plant name. type is descriptive category text.
+  No C# enum change is required for another plant name or category.
+- Every harvest independently rolls every harvestOutputs entry's inclusive range.
+  To produce exactly one cabbage, set both quantity values to 1. For 2-5 tomatoes,
+  set minimumQuantity 2 and maximumQuantity 5.
+- Add more harvestOutputs entries for multiple products, such as grain and straw.
+  Quantities must be positive. Duplicate item IDs within one batch are rejected.
+- Items shared by several output definitions must have identical names and trade
+  settings. Their quantity ranges may differ between harvests and processing.
+- sellPrice sets gold per output unit. merchantStockTarget sets desired stock per
+  visiting merchant. cookStockTarget sets the cook's desired stock if that item
+  occurs in a known cooking recipe. Zero disables that demand.
+
+Growth and lifecycle
+- Growth and watering intervals are elapsed game minutes. 1440 retains one actual
+  game day between checks, independent of midnight. Watered intervals add one
+  progress; missed watering loses one, bounded at zero. Mature crops wait to harvest.
+- Single removes the plant and prepared soil after one harvest, requiring plowing.
+  Set minimumHarvests and maximumHarvests to 1 for this mode.
+- Repeat rolls its lifetime harvest count once at planting and uses regrowthDays
+  between harvests. No more seeds are spent during regrowth. After the final harvest,
+  it becomes dried and the farmer clears it before plowing again. Drying here means
+  exhausted harvest count, not immediately dying from missed watering.
+- Watering cooldowns persist across repeat harvests. Watering is limited both by
+  the elapsed-minute cooldown and by the current interval's WasWatered flag.
+
+Separate processing recipes
+The supplied rice definition harvests one harvested_rice item. processingRecipes
+contains the generic conversion below; the existing farmer AI executes it through
+ProcessCropCommand, with no C# check for rice or threshing:
+{
+  "id": "thresh_rice",
+  "name": "Thresh Rice",
+  "inputItemId": "harvested_rice",
+  "inputQuantity": 1,
+  "outputs": [
+    {
+      "itemId": "rice_grain",
+      "name": "Rice Grain",
+      "minimumQuantity": 20,
+      "maximumQuantity": 20,
+      "sellPrice": 1,
+      "merchantStockTarget": 20,
+      "cookStockTarget": 20
+    }
+  ]
+}
+Processing is immediate, matching the former threshing action, and consumes from
+one carried stack. All outputs are stored before the input is spent. Failed actions
+spend nothing. Recipes can form chains but cycles are rejected to prevent infinite
+AI processing. Input IDs must be declared by a harvest or processing output.
+Farmers process eligible inputs before offering finished output items for sale.
+
+Cooking
+recipes.json uses an ingredients object keyed by output item ID:
+  "ingredients": { "rice_grain": 5 }
+Existing fish portions and spices keep their separate costs and behavior. Cooking
+validates all ingredients before consuming any, counts across split stacks, and
+never consumes deposited sale stock. A new plant output can be used by adding its
+item ID to a recipe and setting a positive cookStockTarget; no ingredient-specific
+C# script is needed. No new vegetable meals were added in this migration.
+
+AI, seeds, and land
+Starting seeds, merchant seed stock, seed prices, and seed targets are per plant.
+All species get the same automatic seed creation, planting, watering, harvest,
+clearing, inventory display, processing, and market trading support. More species
+still require available assigned farmland. Increase farmPlots in npcs.json for
+more simultaneous crops if unowned farmland remains. preferredPlotsPerFarmer
+adds work.cropPreferenceBonusPoints from ai.json while below that target; it is a
+preference rather than a forced command. Needs and schedules still override work.
+
+Migration from the old rice API and JSON
+The requested removal intentionally removes PlantRiceCommand, HarvestRiceCommand,
+ThreshRiceCommand, rice-only components/blueprints, and the compiled default recipes.
+Use PlantCropCommand, HarvestCropCommand, WaterCommand, and ProcessCropCommand.
+PlantProduceComponent now uses ItemId instead of PlantId because processing outputs
+need not be the same item as their source plant. Seed stacks still use PlantId.
+Removed top-level rice fields from farming.json are now fields on the rice plant
+and its processing recipe. minimumYield/maximumYield move to each harvestOutputs
+entry as minimumQuantity/maximumQuantity. Output prices and purchase targets also
+move to outputs. Recipe grains moves to ingredients. Rice-only seed/grain fields
+are removed from economy.json, ai.json, and npcs.json; processPoints replaces
+threshPoints. Supplied files have been migrated; unknown obsolete fields report
+clear load errors in custom files. Historical How To scripted examples using the
+removed API remain as history and need these new commands to run.
+
+C# explanation
+Plant settings describe reusable rules; PlantCropComponent stores each planted
+instance's progress and lifetime. PlantProduceComponent stores ItemId and Quantity,
+so the same code can handle a grain, vegetable, or byproduct. The settings loader
+builds a product dictionary once for names, prices, and purchase targets. These are
+ordinary C# data objects; the existing ECS and command workflow perform gameplay.
+
+Limits
+Adding another plant or output using these supported lifecycles requires JSON only.
+An entirely new mechanic still needs C#. This is startup configuration, not save/load
+or live reloading. Runtime entity IDs stay in World. Long-term food/economy balance
+has not been solved by this migration.
+
+Verification for this migration
+- Console/Core build passed: zero errors and 20 existing nullable warnings.
+- 101 focused checks passed for generic rice, multiple independently randomized
+  harvest outputs, JSON-only additional plant and processing definitions, validation
+  errors/cycles/references, watering/regrowth/drying, ownership and failure handling,
+  partial product trading, item-ID cooking, fish portions, seed supplies, and ten-day
+  autonomous rice harvesting/processing/sales with hunger decay disabled to isolate
+  farming behavior. Existing survival AI (27) and fishing (42) checks also passed.
+- The normal two-day Program.cs simulation completed with no scripted crop actions.
+- Older temporary checks and historical scripted examples that reference removed
+  rice-specific classes no longer compile unchanged; they were not deleted or
+  counted as passing here. This is the intentional API removal requested by the user.

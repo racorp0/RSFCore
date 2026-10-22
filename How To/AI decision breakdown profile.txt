@@ -1,0 +1,46 @@
+Progress: 400 NPCs, 240 minutes, 0.754 seconds
+Progress: 400 NPCs, 480 minutes, 19.956 seconds
+Progress: 400 NPCs, 720 minutes, 48.160 seconds
+Progress: 400 NPCs, 960 minutes, 62.811 seconds
+Progress: 400 NPCs, 1200 minutes, 66.650 seconds
+Progress: 400 NPCs, 1440 minutes, 67.765 seconds
+RESULT population=400; minutes=1440; setup_ms=3387.491; simulation_ms=67765.539; entities=24729; dead=8; zero_hunger=62; seek_food=54; no_home=396; fatigue_at_least_90=0
+Jobs: Farmer=134, Fisher=133, Cook=133
+Activities: Sleep=6, Wait=394
+Capability: cooks_with_skill=1; crop_entities=214; assigned_farmland=216
+System update profile: 67755.34 ms measured; 20 system instances.
+System | Updates | Total ms | Average ms | Maximum ms | Share
+AIDecisionSystem | 1440 | 64637.45 | 44.8871 | 315.9774 | 95.4%
+AIActionExecutionSystem | 1440 | 822.62 | 0.5713 | 23.7907 | 1.2%
+SleepSystem | 1440 | 448.08 | 0.3112 | 43.6405 | 0.7%
+FishingSystem | 1440 | 420.52 | 0.2920 | 26.2590 | 0.6%
+ScheduleSystem | 1440 | 388.35 | 0.2697 | 8.4999 | 0.6%
+NeedsSystem | 1440 | 351.89 | 0.2444 | 3.8169 | 0.5%
+MovementSystem | 1440 | 201.78 | 0.1401 | 1.9348 | 0.3%
+HungerSystem | 1440 | 189.22 | 0.1314 | 5.7026 | 0.3%
+FarmingSystem | 1440 | 99.80 | 0.0693 | 1.4578 | 0.1%
+DeathSystem | 1440 | 90.09 | 0.0626 | 2.7844 | 0.1%
+TravelSystem | 1440 | 38.41 | 0.0267 | 2.8244 | 0.1%
+CookingSystem | 1440 | 25.94 | 0.0180 | 4.8391 | 0.0%
+StatusEffectSystem | 1440 | 10.33 | 0.0072 | 3.5693 | 0.0%
+MerchantVisitSystem | 1440 | 9.81 | 0.0068 | 5.0829 | 0.0%
+ManaRegenerationSystem | 1440 | 6.84 | 0.0048 | 3.6774 | 0.0%
+InnSystem | 1440 | 4.97 | 0.0035 | 1.6203 | 0.0%
+ProcessingSystem | 1440 | 3.22 | 0.0022 | 1.1940 | 0.0%
+CooldownSystem | 1440 | 3.05 | 0.0021 | 1.6129 | 0.0%
+LeaseSystem | 1440 | 2.02 | 0.0014 | 0.2923 | 0.0%
+TimeSystem | 1440 | 0.95 | 0.0007 | 0.2190 | 0.0%
+
+Category | Calls | Total ms | Maximum call ms
+Food search total | 77889 | 42314.382 | 46.055
+Food sellers (nested) | 77889 | 42130.611 | 46.049
+Village decisions total | 165830 | 13081.969 | 30.902
+Village supply sellers (nested) | 32281 | 12033.100 | 30.840
+Job decisions total | 165830 | 5932.738 | 51.906
+Cook job (nested) | 17733 | 5262.317 | 51.900
+Snapshot construction | 1069 | 1471.808 | 61.318
+Processing planning (nested) | 165608 | 581.021 | 2.346
+Farmer job (nested) | 7715 | 425.278 | 4.065
+Healing search total | 68 | 26.936 | 1.253
+Healing sellers (nested) | 68 | 26.661 | 1.249
+Fisher job (nested) | 546 | 11.456 | 3.804

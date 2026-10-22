@@ -1,0 +1,109 @@
+// Named job and life-stage templates. Intervals cannot overlap; gaps mean free time. Minute 360 is 06:00.
+{
+  "Farmer": {
+    "name": "Farmer",
+    "entries": [
+      {
+        "startMinute": 360,
+        "endMinute": 720,
+        "activity": "Work"
+      },
+      {
+        "startMinute": 720,
+        "endMinute": 780,
+        "activity": "MealBreak"
+      },
+      {
+        "startMinute": 780,
+        "endMinute": 1080,
+        "activity": "Work"
+      }
+    ]
+  },
+  "Fisher": {
+    "name": "Fisher",
+    "entries": [
+      {
+        "startMinute": 420,
+        "endMinute": 660,
+        "activity": "Work"
+      },
+      {
+        "startMinute": 660,
+        "endMinute": 720,
+        "activity": "MealBreak"
+      },
+      {
+        "startMinute": 720,
+        "endMinute": 1020,
+        "activity": "Work"
+      }
+    ]
+  },
+  "Cook": {
+    "name": "Cook",
+    "entries": [
+      {
+        "startMinute": 300,
+        "endMinute": 660,
+        "activity": "Work"
+      },
+      {
+        "startMinute": 660,
+        "endMinute": 720,
+        "activity": "MealBreak"
+      },
+      {
+        "startMinute": 720,
+        "endMinute": 1140,
+        "activity": "Work"
+      }
+    ]
+  },
+  "Smoker": {
+    "name": "Smoker",
+    "entries": [
+      { "startMinute": 360, "endMinute": 720, "activity": "Work" },
+      { "startMinute": 720, "endMinute": 780, "activity": "MealBreak" },
+      { "startMinute": 780, "endMinute": 1080, "activity": "Work" }
+    ]
+  },
+  "Merchant": {
+    "name": "Merchant",
+    "entries": [
+      {
+        "startMinute": 360,
+        "endMinute": 1080,
+        "activity": "Work"
+      }
+    ]
+  },
+  "Unemployed": {
+    "name": "Unemployed",
+    "entries": [
+      {
+        "startMinute": 720,
+        "endMinute": 780,
+        "activity": "MealBreak"
+      }
+    ]
+  },
+  "Baby": {
+    "name": "Baby",
+    "entries": []
+  },
+  "Toddler": {
+    "name": "Toddler",
+    "entries": []
+  },
+  "Teenager": {
+    "name": "Teenager",
+    "entries": [
+      {
+        "startMinute": 720,
+        "endMinute": 780,
+        "activity": "MealBreak"
+      }
+    ]
+  },
+}

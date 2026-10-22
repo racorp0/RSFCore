@@ -1,0 +1,182 @@
+using RSF.Core.CommandHandlers;
+using RSF.Core.Commands;
+using RSF.Core.Components;
+using RSF.Core.Debugging;
+using RSF.Core.Entities;
+using RSF.Core.Simulation;
+using RSF.Core.Systems;
+
+
+
+Simulation simulation = new();
+
+CommandDispatcher dispatcher =
+    new();
+
+//player
+
+var player =
+    simulation.World.CreateEntity();
+
+simulation.World.Add(
+    player,
+    new HealthComponent(75, 100));
+
+simulation.World.Add(
+    player,
+    new InventoryComponent());
+
+simulation.World.Add(
+    player,
+    new EquipmentComponent());
+
+//equipment
+
+Entity sword =
+    simulation.World.CreateEntity();
+
+
+simulation.World.Add(
+    sword,
+    new ItemComponent("Iron Sword"));
+
+simulation.World.Add(
+    sword,
+    new EquipmentItemComponent(
+        EquipmentSlot.Weapon));
+
+Entity sword2 =
+    simulation.World.CreateEntity();
+
+
+simulation.World.Add(
+    sword2,
+    new ItemComponent("Blood Sword"));
+
+simulation.World.Add(
+    sword2,
+    new EquipmentItemComponent(
+        EquipmentSlot.Weapon));
+
+//potion
+
+Entity potion =
+    simulation.World.CreateEntity();
+
+simulation.World.Add(
+    potion,
+    new ItemComponent("Health Potion"));
+
+simulation.World.Add(
+    potion,
+    new ConsumableItemComponent());
+
+simulation.World.Add(
+    potion,
+    new RestoreHealthEffectComponent(25));
+
+Entity bread =
+    simulation.World.CreateEntity();
+
+simulation.World.Add(
+    bread,
+    new ItemComponent("Bread"));
+
+simulation.World.Add(
+    bread,
+    new ConsumableItemComponent());
+
+/*dispatch_registry*/
+
+InventorySystem inventorySystem =
+    new(simulation.World);
+
+PickupCommandHandler pickupHandler =
+    new(simulation.World, inventorySystem);
+
+EquipmentSystem equipmentSystem =
+    new(simulation.World);
+
+EquipCommandHandler equipHandler =
+    new(
+        simulation.World,
+        inventorySystem,
+        equipmentSystem);
+
+dispatcher.Register(equipHandler);
+
+UnequipCommandHandler unequipHandler =
+    new(
+        equipmentSystem,
+        simulation.World);
+
+dispatcher.Register(unequipHandler);
+
+DropCommandHandler dropHandler =
+    new(
+        inventorySystem,
+        equipmentSystem);
+
+dispatcher.Register(pickupHandler);
+dispatcher.Register(dropHandler);
+
+
+ItemEffectSystem itemEffectSystem =
+    new(simulation.World);
+
+UseItemCommandHandler useItemHandler =
+    new(
+        simulation.World,
+        inventorySystem,
+        itemEffectSystem);
+
+dispatcher.Register(useItemHandler);
+
+/*dispatch_action*/
+
+dispatcher.Dispatch(
+    new PickupCommand(
+        player,
+        sword));
+
+dispatcher.Dispatch(
+    new EquipCommand(
+        player,
+        sword));
+
+dispatcher.Dispatch(
+    new PickupCommand(
+        player,
+        sword2));
+
+dispatcher.Dispatch(
+    new EquipCommand(
+        player,
+        sword2));
+
+
+dispatcher.Dispatch(
+    new PickupCommand(
+        player,
+        bread));
+
+
+dispatcher.Dispatch(
+    new EquipCommand(
+        player,
+        bread));
+
+
+
+
+Console.WriteLine(
+    WorldDebugger.DumpEntity(
+        simulation.World,
+        player));
+
+
+Console.WriteLine(
+    WorldDebugger.DumpEntity(
+        simulation.World,
+        sword));
+

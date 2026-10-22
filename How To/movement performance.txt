@@ -1,0 +1,67 @@
+Movement performance: query the existing velocity index
+
+MovementSystem now calls world.GetEntitiesWith<VelocityComponent>() rather than
+world.GetEntities(). Terrain tiles have positions but no velocity, so they no
+longer receive movement's death, sleep, cooking, position, and velocity checks.
+The position formula, stationary activity checks, zero velocities, and public
+SetVelocity API are unchanged. No other gameplay system has been optimized here.
+
+World.GetEntitiesWith<T>() reads ComponentStore's existing per-component
+EntityId dictionary, then resolves registered entities through World. It does
+not build another index, cache NPCs, or introduce another identity system.
+The query reflects normal component addition, replacement, removal, and entity
+destruction automatically. Missing storage returns an empty sequence without
+creating component storage. Orphan component IDs are ignored, matching the old
+world scan's registered-entity behavior.
+
+C# `yield return` produces matching entities when the caller iterates, rather
+than copying every world entity into a list. The sequence is live, not a copied
+snapshot, and its order is not guaranteed. Do not change the queried component
+collection or destroy matching entities inside that loop. Call ToList() first
+when the caller needs to do that. Movement is safe: it updates PositionComponent
+while iterating VelocityComponent storage, and skips entities with no position.
+Movement results do not depend on entity iteration order in the current system.
+
+Files changed: RSF.Core/World/World.cs adds the query; MovementSystem.cs uses it.
+Program.cs, map data, time stepping, system registration order, commands, and
+component storage implementation are unchanged in this optimization.
+
+Verification:
+1,303 query/equivalence/benchmark checks passed. The benchmark includes the
+exact old MovementSystem copied into a temporary test project, with only its
+class name changed. It compares position outcomes against the new system.
+Checks cover static terrain, dead/sleeping/cooking actors, no-position actors,
+zero/negative/fractional movement steps, reversed velocity attachment order,
+component changes, destruction, missing storage, and foreign/orphan components.
+
+Controlled movement-only benchmark, Debug build, 22,500 positioned terrain
+entities plus the stated number of moving entities. Each measurement ran 480
+updates; three paired runs alternated old/new order and reset mover positions.
+All measured runs verified identical resulting positions.
+  3 movers: old median 3,978.590 ms; indexed median 0.576 ms.
+  400 movers: old median 4,619.691 ms; indexed median 127.993 ms (36.1x ratio).
+The tiny 3-mover indexed timing makes its ratio particularly noisy; absolute
+costs are more useful than treating that ratio as a general prediction.
+These are movement-only timings, not a 400-NPC village benchmark. Other systems
+still scan terrain and perform their existing AI and economic work. The total
+simulation speedup cannot be inferred directly from the movement ratio.
+
+The Console project was built to an isolated temporary output folder because a
+running Console process had previously locked the normal output DLL. Clean
+compilation passed with 0 errors and the same 20 existing nullable warnings.
+No running user process was stopped. No permanent test framework was added.
+
+Integrated result: a one-day profile of the existing 150 x 150 village and three
+residents completed with 18.23 ms spent in MovementSystem across 1,440 updates.
+The earlier diagnostic run spent 10,136.24 ms in movement. Since gameplay random
+results and machine load differ, that is supporting evidence, not a controlled
+whole-village before/after benchmark. The controlled paired test above isolates
+the movement change. The new complete run still took 41.71 seconds; AI decisions
+used 5.57 seconds and are now the largest measured system. Remaining systems
+retain their old scans and require separate incremental optimizations.
+See How To/movement profile.txt for all measured system times.
+
+20 profiler behavior checks and 95 map/travel/gameplay checks also passed,
+for 1,418 checks in total. The current 50-day Program.cs run was not repeated;
+the one-day workflow and controlled mover workloads were used for validation.
+No full 400-NPC simulation has been measured.

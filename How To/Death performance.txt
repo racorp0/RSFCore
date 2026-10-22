@@ -1,0 +1,51 @@
+DeathSystem performance
+
+DeathSystem.Update now uses GetEntitiesWith<HealthComponent>() instead of
+checking every world entity. Terrain without health is skipped through the
+existing ComponentStore index. No cache, event mechanism, or new system was added.
+The existing health checks, DeadComponent creation, and notification text are
+unchanged. Class, constructor, and update documentation explain these roles.
+Program.cs, settings, and system registration are unchanged.
+
+Health.Current at zero or below marks an entity dead unless it already has
+DeadComponent. Repeated updates do not print the same death again. Health.Max
+does not control this decision. Raising health after death does not remove the
+death marker; this optimization does not add revival. Existing action and
+gameplay systems continue to handle dead entities through their own checks.
+
+C# foreach now visits the existing health index. Adding DeadComponent changes
+a different collection, so the live query is safe for the current update body.
+Do not add/remove health or destroy entities inside this enumeration. Health
+membership changes between updates are detected without a cache. Component query
+order is not guaranteed: simultaneous death notifications may appear in a
+different order than the former world scan. Their text and once-only behavior
+are preserved. Gameplay does not depend on the notification order.
+
+Validation:
+- A temporary Simulation.Update workflow demonstrated positive/zero/negative
+  health, entities without health, health added later, later deaths, once-only
+  notifications, no automatic revival, and entity destruction. All expectations
+  passed. No production tests were deleted or test framework added.
+- Existing 95 map/gameplay, 27 survival AI, and 20 profiler checks passed.
+- Source comparison confirmed the existing gameplay body is unchanged, apart
+  from the file's final newline.
+- Console build passed with 0 errors and 20 existing nullable warnings on the
+  initial compilation. Output used a temporary folder; no running app was stopped.
+
+Controlled Debug benchmark: 22,500 empty terrain entities, 480 updates, three
+alternating original/updated pairs after warm-up. Health stayed positive to
+measure checking overhead without console output. Median milliseconds:
+  3 entities with health: original 592.563; updated 0.270.
+  400 entities with health: original 590.915; updated 17.507 (about 33.8 times faster).
+The original source was copied before editing for the comparison. This is the
+death update only, not a complete 400-NPC simulation or death notification load.
+
+One-day village profile: 150x150 map, 3 residents, 1,440 game minutes.
+  Previous run: wall 19,350.26 ms; DeathSystem 2,173.24 ms.
+  Current run: wall 16,699.91 ms; DeathSystem 10.67 ms.
+Full-day samples contain random gameplay and runtime variation. Their entire
+wall-time difference cannot be attributed solely to this change. The paired
+benchmark isolates the death-check improvement. StatusEffectSystem now leads
+the profile at 1,939.56 ms and remains future work.
+
+Files changed this phase: DeathSystem.cs, this guide, and Death profile.txt.

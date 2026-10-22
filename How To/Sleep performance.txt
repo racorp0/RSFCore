@@ -1,0 +1,49 @@
+SleepSystem performance
+
+SleepSystem.Update now visits World.GetEntitiesWith<SleepSettingsComponent>()
+instead of all world entities. This reuses the existing ComponentStore index
+and skips terrain. No separate cache, new system, or new scheduling is needed.
+Only the selection loop and its comments changed in SleepSystem.cs. The full
+update body, Start, Wake, and CanSleep remain unchanged. Program.cs is unchanged.
+
+The same per-NPC timestamps still retain leftover minutes. Awake fatigue still
+increases at AwakeMinutesPerPoint; sleep reduces fatigue at SleepMinutesPerPoint
+and wakes the NPC at WakeFatigue. Owned homes, proximity, paid inn entitlement,
+death checks, missing components, and validation keep their existing behavior.
+
+C# foreach enumerates only entities found in the sleep-settings index. Recovery
+changes Fatigue, Sleeping, and FatigueClock components, not SleepSettings, so the
+live index remains safe during this loop. Do not change SleepSettings membership
+or destroy entities inside this enumeration. Between-update changes are picked
+up automatically. Entity order is not guaranteed; normal sleep updates operate
+on individual NPCs without competing for beds or money. Invalid settings still
+throw, but the order of partial NPC updates before an exception may differ.
+
+Validation:
+- 808 temporary equivalence and explicit recovery checks passed. Original source
+  was copied before editing and compiled as BaselineSleepSystem for comparison.
+  Cases include elapsed-time remainders, wake thresholds, awake intervals,
+  custom intervals, missing settings/fatigue/health, death, invalid settings,
+  expired inn stays, lost ownership, destroyed sleeping places, settings removal
+  and reattachment, and destroyed NPCs.
+- Existing 95 map/gameplay, 27 survival AI, and 20 profiler checks passed.
+- Console build passed: 0 errors, 20 existing nullable warnings on initial build.
+  Output used a temporary folder without stopping running applications.
+- Source comparison confirmed the existing update body and following methods
+  were unchanged. No production tests were deleted.
+
+Controlled Debug benchmark: 22,500 empty terrain entities, 480 sleep updates,
+three alternating original/updated pairs after warm-up. Median milliseconds:
+  3 awake NPCs: original 939.356; updated 1.328.
+  400 awake NPCs: original 982.495; updated 127.684 (about 7.7 times faster).
+This measures the sleep update only with a fixed clock, not a full 400-NPC village.
+
+One-day village profile: 150x150 map, 3 residents, 1,440 game minutes.
+  Previous run: wall 24,331.22 ms; SleepSystem 2,077.08 ms.
+  Current run: wall 25,693.19 ms; SleepSystem 31.29 ms.
+The full simulation did not improve in this single sample: other systems took
+longer. Random gameplay and runtime variation prevent a controlled whole-village
+speedup claim. The paired benchmark above isolates the sleep update improvement.
+InnSystem and ScheduleSystem lead the latest profile and remain future work.
+
+Files changed this phase: SleepSystem.cs, this guide, and Sleep profile.txt.

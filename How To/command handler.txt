@@ -1,0 +1,90 @@
+using RSF.Core.CommandHandlers;
+using RSF.Core.Commands;
+using RSF.Core.Components;
+using RSF.Core.Simulation;
+using RSF.Core.Systems;
+
+
+
+Simulation simulation = new();
+
+TimeSystem timeSystem =
+    new(simulation.Clock);
+
+CooldownSystem cooldownSystem =
+    new(
+        simulation.World,
+        simulation.Clock);
+
+UseSkillCommandHandler useSkillHandler =
+    new(cooldownSystem);
+
+MovementSystem movementSystem =
+    new(simulation.World);
+
+MoveCommandHandler moveHandler =
+    new(movementSystem);
+
+simulation.AddSystem(movementSystem);
+simulation.AddSystem(timeSystem);
+simulation.AddSystem(cooldownSystem);
+
+CommandDispatcher dispatcher =
+    new();
+
+dispatcher.Register(
+    useSkillHandler);
+
+dispatcher.Register(
+    moveHandler);
+
+var player =
+    simulation.World.CreateEntity();
+
+
+// =========================
+// MINUTE 0
+// =========================
+
+Console.WriteLine("=== Minute 0 ===");
+
+dispatcher.Dispatch(
+    new UseSkillCommand(player));
+
+// =========================
+// +2 MINUTES
+// =========================
+
+Console.WriteLine();
+Console.WriteLine("=== +2 minutes ===");
+
+simulation.Update(2);
+
+useSkillHandler.Handle(
+    new UseSkillCommand(player));
+
+
+// =========================
+// +3 MINUTES
+// =========================
+
+Console.WriteLine();
+Console.WriteLine("=== +3 minutes ===");
+
+simulation.Update(3);
+
+useSkillHandler.Handle(
+    new UseSkillCommand(player));
+
+simulation.World.Add(
+    player,
+    new PositionComponent(0, 0));
+
+simulation.World.Add(
+    player,
+    new VelocityComponent(0, 0));
+
+dispatcher.Dispatch(
+    new MoveCommand(player, 1, 0));
+
+simulation.Update(1);

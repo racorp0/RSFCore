@@ -1,0 +1,46 @@
+TravelSystem performance
+
+TravelSystem.Update now queries GetEntitiesWith<TravelComponent>().ToList()
+instead of scanning every world entity. The existing component index selects
+active routes, skipping stationary terrain and NPCs without travel plans.
+ToList copies only travelers because Stop removes TravelComponent during
+arrival or invalidation. Iterating the live index directly would be unsafe.
+No cache, new system, or replacement movement/pathfinding mechanism was added.
+
+Start, Stop, and the existing update body are unchanged. Four-direction route
+search, blocked/water checks, proximity, route queues, health/death/sleep checks,
+movement intervals, and velocity updates continue through the existing code.
+Program.cs, JSON settings, and simulation registration are unchanged.
+Query order is not guaranteed; current traveler updates affect their own routes
+and velocities, without collision reservations or shared movement resources.
+Future collision or road-capacity features would need a separate ordering review.
+
+Validation:
+- Existing 95 map/gameplay checks passed, including routes to village locations,
+  avoiding walls/water, and arrival at interaction points.
+- Existing 27 survival AI and 20 profiler checks passed (142 total).
+- A focused manual workflow stopped four invalid routes in one update and
+  verified every route was removed and every velocity reset without skipping.
+- Source comparison confirmed Start, Stop, and the full update body unchanged.
+- Console build passed with 0 errors and 20 existing nullable warnings on initial
+  compilation. Output used a temporary folder; no running app was stopped.
+  No production tests were deleted or new test framework added.
+
+Controlled Debug benchmark: 22,500 empty terrain entities, 480 updates, three
+alternating original/updated pairs after warm-up. Travelers had valid routes
+but were waiting for their next movement interval at a fixed clock.
+Median milliseconds:
+  3 travelers: original 638.513; updated 1.141.
+  400 travelers: original 960.436; updated 151.771 (about 6.3 times faster).
+The original source was copied before editing for comparison. This measures
+route validation/selection only, not route finding or complete 400-NPC gameplay.
+
+One-day village profile: 150x150 map, 3 residents, 1,440 game minutes.
+  Previous run: wall 14,824.61 ms; TravelSystem 1,904.56 ms.
+  Current run: wall 11,887.51 ms; TravelSystem 8.91 ms.
+Full-day samples include random gameplay and runtime variation; their entire
+wall-time difference cannot be attributed solely to this change. Route-finding
+cost in Start is outside the per-system Update timing and was not optimized.
+CookingSystem now leads the profile at 1,762.84 ms and remains future work.
+
+Files changed: TravelSystem.cs, this guide, and Travel profile.txt.

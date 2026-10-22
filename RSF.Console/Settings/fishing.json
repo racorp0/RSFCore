@@ -1,0 +1,94 @@
+// Whole-fish price = weightGrams * pricePer500Grams / 500, rounded up to whole gold.
+// Configured spots use locations[].baitCatchChances; baits.catchChances remains the default for older unassigned waters. The fishTypes catchChancePercent values retain the legacy manual-world table.
+// Each bait table totals at most 100; skill-locked species remain no catch.
+{
+  "minimumCatchMinutes": 5,
+  "maximumCatchMinutes": 240,
+  "fishTypes": [
+    {
+      "species": "Carp", "meatItemId": "carp_meat", "meatName": "Carp Meat", "meatYieldPercent": 80,
+      "pricePer500Grams": 10,
+      "catchChancePercent": 45,
+      "minWeightGrams": 500,
+      "maxWeightGrams": 3000,
+      "minimumSkillLevel": 1
+    },
+    {
+      "species": "Catfish", "meatItemId": "catfish_meat", "meatName": "Catfish Meat", "meatYieldPercent": 80,
+      "pricePer500Grams": 12,
+      "catchChancePercent": 30,
+      "minWeightGrams": 1000,
+      "maxWeightGrams": 5000,
+      "minimumSkillLevel": 1
+    },
+    {
+      "species": "Tilapia", "meatItemId": "tilapia_meat", "meatName": "Tilapia Meat", "meatYieldPercent": 80,
+      "pricePer500Grams": 8,
+      "catchChancePercent": 15,
+      "minWeightGrams": 200,
+      "maxWeightGrams": 1500,
+      "minimumSkillLevel": 1
+    },
+    {
+      "species": "Perch", "meatItemId": "perch_meat", "meatName": "Perch Meat", "meatYieldPercent": 80, "pricePer500Grams": 9, "catchChancePercent": 0,
+      "minWeightGrams": 200, "maxWeightGrams": 1200, "minimumSkillLevel": 1
+    },
+    {
+      "species": "Pike", "meatItemId": "pike_meat", "meatName": "Pike Meat", "meatYieldPercent": 80, "pricePer500Grams": 15, "catchChancePercent": 0,
+      "minWeightGrams": 1000, "maxWeightGrams": 6000, "minimumSkillLevel": 2
+    },
+    {
+      "species": "Mackerel", "meatItemId": "mackerel_meat", "meatName": "Mackerel Meat", "meatYieldPercent": 80, "pricePer500Grams": 11, "catchChancePercent": 0,
+      "minWeightGrams": 300, "maxWeightGrams": 2000, "minimumSkillLevel": 1
+    },
+    {
+      "species": "Sardine", "meatItemId": "sardine_meat", "meatName": "Sardine Meat", "meatYieldPercent": 80, "pricePer500Grams": 6, "catchChancePercent": 0,
+      "minWeightGrams": 100, "maxWeightGrams": 400, "minimumSkillLevel": 1
+    },
+    {
+      "species": "Tuna", "meatItemId": "tuna_meat", "meatName": "Tuna Meat", "meatYieldPercent": 80, "pricePer500Grams": 20, "catchChancePercent": 0,
+      "minWeightGrams": 3000, "maxWeightGrams": 12000, "minimumSkillLevel": 2
+    }
+  ],
+  // Absolute chances: any unused percentage is no catch; skill locks still apply.
+  "baits": [
+    {
+      "id": "worm", "name": "Worm Bait", "price": 1, "merchantStock": 30,
+      "catchChances": { "Carp": 45, "Catfish": 30, "Tilapia": 15 }
+    },
+    {
+      "id": "pellet", "name": "Pellet Bait", "price": 2, "merchantStock": 20,
+      "catchChances": { "Carp": 60, "Catfish": 10, "Tilapia": 25 }
+    }
+  ],
+  // Each spot becomes a Water tile. Keep positions outside farmland and building zones.
+  "locations": [
+    {
+      "id": "village_river", "name": "Village River", "waterType": "river", "x": 4, "y": 15,
+      "minimumCatchMinutes": 5, "maximumCatchMinutes": 240,
+      "species": ["Carp", "Catfish", "Tilapia"],
+      "baitCatchChances": {
+        "worm": { "Carp": 45, "Catfish": 30, "Tilapia": 15 },
+        "pellet": { "Carp": 60, "Catfish": 10, "Tilapia": 25 }
+      }
+    },
+    {
+      "id": "village_lake", "name": "Village Lake", "waterType": "lake", "x": 9, "y": 12,
+      "minimumCatchMinutes": 5, "maximumCatchMinutes": 240,
+      "species": ["Carp", "Perch", "Pike"],
+      "baitCatchChances": {
+        "worm": { "Carp": 25, "Perch": 50, "Pike": 10 },
+        "pellet": { "Carp": 45, "Perch": 35, "Pike": 15 }
+      }
+    },
+    {
+      "id": "village_sea", "name": "Village Sea Shore", "waterType": "sea", "x": 29, "y": 17,
+      "minimumCatchMinutes": 5, "maximumCatchMinutes": 240,
+      "species": ["Mackerel", "Sardine", "Tuna"],
+      "baitCatchChances": {
+        "worm": { "Mackerel": 50, "Sardine": 35, "Tuna": 5 },
+        "pellet": { "Mackerel": 35, "Sardine": 45, "Tuna": 15 }
+      }
+    }
+  ]
+}

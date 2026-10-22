@@ -1,0 +1,110 @@
+RSF village simulation
+
+Program.cs only configures the simulation, spawns the village and NPCs, advances
+simulation time, and prints the resulting state. NPCs choose all later actions.
+
+Map and buildings
+- VillageBlueprint creates a 32 x 20 map, river, market, inn, and entrance.
+- NpcBlueprint assigns each permanent resident an owned house on a Building tile.
+- Village membership enables physical interactions. Legacy worlds created with
+  MapBlueprint alone retain their original command behavior.
+- TravelSystem caches a four-direction route. MovementSystem applies its velocities.
+  Water and blocked cells cannot be crossed. An interaction can occur within one
+  Manhattan tile of a plot, river, building, or entrance.
+
+Trading
+- Offering supplies deposits them at the market; food from the inn owner is posted
+  at the inn counter. Ownership stays with the seller until a purchase succeeds.
+- SaleLocationComponent represents that deposit. Goods remain in the owner's
+  inventory for ownership/accounting, but cannot be consumed remotely.
+- The buyer must reach the posted counter. The seller does not need to stay there.
+- Grain, seeds, bait, and spices support partial purchases. Fish and meals are
+  individual items. Purchased goods are carried and are no longer listed for sale.
+
+Cooking
+- The cook requires level-one cooking skill, reusable utensils, an owned inn,
+  and every recipe ingredient. Recipes can be supplied in CookingSettingsComponent.
+- Ingredient quantities are checked together before consumption at batch start.
+- The batch takes elapsed game minutes. Interruptions do not refund ingredients.
+- Each serving becomes an individual meal with a random quality and restoration
+  effect components. Existing UseItemCommand and ItemEffectSystem consume meals.
+- Seasoned Rice produces two servings. Fish recipes consume prepared portions,
+  with one meal per portion. Servings applies to fish-free recipes. Recipes can
+  configure duration, ingredients, hunger restoration, and health restoration.
+
+Sleep and lodging
+- SleepSettingsComponent configures bedtime, fatigue thresholds, and recovery.
+- Fatigue rises while awake and decreases while sleeping at home or a paid inn.
+- Urgent health and food can interrupt sleep. Fatigue is separate from hunger.
+- Inn rent is paid to the owner in advance for exactly 1440 minutes, not until
+  midnight. Active stays renew when due if affordable and a bed is available.
+- Failed renewal releases the bed and wakes the guest. No debt is created.
+
+Visiting merchants
+- VillageComponent configures arrival intervals, stock, prices, gold, rent, beds,
+  idle departure, and maximum visit duration.
+- Default arrivals are randomly 5-12 game days apart, with one active visitor.
+- Merchants carry finite seeds, bait, spices, food, and gold. They buy rice grain
+  and fish up to purchasing targets. Workers can buy missing job supplies.
+- A merchant without feasible trades for 120 minutes, or after three days, requests
+  departure. They walk to the entrance before leaving the active world.
+- DepartedMerchants retains a summary of their gold and cargo.
+
+Configuration and observations
+- Pass VillageComponent settings to VillageBlueprint.Create.
+- Pass needs, ai, work, cooking, sleep, schedule, and starting-supply arguments to
+  NpcBlueprint.Spawn. No new settings files or external services are required.
+- The default Program.cs runs one day for a quick check. Change FromDays(1) to
+  FromDays(15) to observe the infrequent merchant arrival/departure cycle.
+- Opening stock is not replenished automatically. NPCs can run out of affordable
+  food or ingredients and can starve in longer runs. Population/economy balancing
+  is separate from pathfinding, cooking, sleep, and visitor lifecycle correctness.
+- There is no automatic aging, childcare, building construction, or save/load yet.
+
+C# notes
+- A Queue stores route steps in the order they will be visited. Each step is an
+  (X, Y) tuple: two named integers representing a grid position.
+- Recipe is immutable shared data. Each finished meal is a separate entity, so
+  rolling quality never changes other meals or the recipe definition.
+- Optional named spawn arguments make personal settings visible without adding
+  scripted NPC actions to Program.cs.
+
+Food supply and bait cycle
+- Rivers default to a random 5-240 game-minute wait. Set MinimumCatchMinutes and
+  MaximumCatchMinutes on RiverComponent to configure individual rivers.
+- Successful plowing yields 0-10 Worms by default. These use BaitComponent, so
+  existing fishing and market commands accept them. Failed/repeated plows give
+  nothing. Add FarmingSettingsComponent to a farmer to configure the range:
+  simulation.World.Add(minami, new FarmingSettingsComponent
+  {
+      MinimumWorms = 0,
+      MaximumWorms = 10
+  });
+- Farmers offer worms at the market; fishers buy them through existing supply AI.
+- Harvesting clears FarmPlotComponent and RiceCropComponent. The map tile and
+  ownership remain. The farmer must plow again before spending another seed.
+- Cooking validates every ingredient before preparing whole fish with utensils.
+  A 1,200g catch becomes 500g, 500g, and 200g portions. Each portion is a separate
+  named inventory entity with FishPortionComponent; unused portions are stored.
+  Cooking one Fish Stew consumes one portion and one spice, producing one meal.
+  A fish below 500g provides only one portion and therefore one meal.
+- FishPortions.Count shares the same rounded-up calculation between AI and cooking.
+  For 1,200 grams: 1200 / 500 gives 2, and 1200 % 500 gives a 200g remainder.
+  The remainder adds one smaller portion; no weight disappears during chopping.
+- The existing StartCookingCommand performs preparation as part of a validated
+  batch, so no second command framework or scripted actions are needed.
+- Cancelled batches still lose consumed ingredients, while unused portions stay.
+  Stored portions currently have no spoilage timer, matching other ingredients.
+- Existing historical scripted examples that replant directly after harvesting
+  now need a PlowCommand before their next PlantRiceCommand.
+
+Food-cycle verification
+- Console/Core build: zero errors; 20 existing nullable-reference warnings.
+- Focused checks: 114 village/food, 42 fishing, 27 survival AI, 41 trading,
+  and 30 schedules/autonomous work passed (254 total). Temporary checks preserve
+  older scenarios and adjust the intentional fish-serving and fishing-time rules.
+- The existing two-day Program.cs run produced meals and retained fish portions.
+- A separate 15-day simulation still lost all original residents to starvation.
+  This feature supplies bait and portions but does not establish sustainable
+  long-term balance. Hunger/work readiness, spices, gold, and merchant timing
+  remain unchanged and require a separate economy investigation.

@@ -1,0 +1,55 @@
+StatusEffectSystem performance
+
+StatusEffectSystem.Update now combines the existing PoisonStatusComponent and
+RegenerationStatusComponent indexes instead of scanning every world entity.
+No new component, cache, scheduling mechanism, or registration was introduced.
+Program.cs and the effect-processing methods are unchanged.
+
+C# Concat combines the two queries. Distinct includes each registered Entity
+reference once even when both effects exist. ToList copies those references
+before processing, so effects can remove themselves without invalidating a live
+component enumeration. The list contains only affected entities, not terrain.
+The existing per-entity body still applies poison before regeneration.
+
+Entities without health remain included: ticks still update their timestamps
+and effects still expire. Health damage/healing retains the same clamps. Dead
+entities are not newly excluded. Tick timing, expiry, and one-tick-per-update
+behavior are unchanged, including a tick before removal when both are due.
+No catch-up loop, stacking rule, or automatic revival was added. ItemEffectSystem
+still controls applying/replacing status components through its existing path.
+
+The combined query does not preserve world order between different entities.
+Their console messages may appear in a different order. Current effect handlers
+only change the affected entity, so they do not compete for shared resources.
+Future effects that affect other entities would need a separate ordering review.
+
+Validation:
+- A temporary Simulation.Update workflow passed expected tick boundaries,
+  poison-before-regeneration ordering, no duplicate combined-effect processing,
+  health caps, death integration, expiry with and without health, effects added
+  or removed between updates, and entity destruction.
+- Existing 95 map/gameplay, 27 survival AI, and 20 profiler checks passed.
+- Source comparison confirmed the existing processing body and all helper methods
+  are unchanged, apart from the final file newline.
+- Console build passed with 0 errors and 20 existing nullable warnings on initial
+  compilation. Output used a temporary folder; no running app was stopped.
+  No production tests were deleted or new test framework added.
+
+Controlled Debug benchmark: 22,500 empty terrain entities, 480 updates, three
+alternating original/updated pairs after warm-up. Each affected entity had both
+effects, with no tick due at the fixed clock. Median milliseconds:
+  3 affected entities: original 1,105.514; updated 1.520.
+  400 affected entities: original 1,232.628; updated 81.775 (about 15.1 times faster).
+The original source was copied before editing for comparison. These timings
+measure status update overhead, not full 400-NPC gameplay or console output.
+
+One-day village profile: 150x150 map, 3 residents, 1,440 game minutes.
+  Previous run: wall 16,699.91 ms; StatusEffectSystem 1,939.56 ms.
+  Current run: wall 14,824.61 ms; StatusEffectSystem 15.49 ms.
+Separate samples include random gameplay and runtime variation. Their whole-run
+difference cannot be attributed solely to this change. The village profile does
+not represent a heavy active-effect workload; the focused workflow and benchmark
+exercise active status membership separately. TravelSystem leads the latest
+profile at 1,904.56 ms and remains future work.
+
+Files changed: StatusEffectSystem.cs, this guide, and Status effect profile.txt.

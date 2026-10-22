@@ -1,0 +1,86 @@
+Map size and standard building/farm parcels
+
+Edit RSF.Console/Settings/map.json and rebuild. Settings load before gameplay.
+The supplied map is 150 x 150 tiles: 22,500 existing tile entities. At the default
+metresPerTile=1, physical size is 150 x 150 metres. Tile scale is recorded data;
+existing minutesPerTravelTile still controls game travel time.
+
+plotWidth=12 and plotHeight=9 apply to every configured parcel:
+- Four available one-floor houses, initially unowned.
+- One two-floor inn. Floors are metadata; interiors/stairs are a later phase.
+- One available blacksmith/workshop building, using existing Workshop kind.
+  This does not introduce a blacksmith profession or production recipes.
+- Two farms, each containing 108 individual crop cells (216 total farm tiles).
+
+Each plot entry specifies id, name, kind, x, y, and floors. Building entries
+also specify entranceX and entranceY on the footprint boundary. Existing entity
+positions identify entrances, while MapPlotComponent stores the full rectangle.
+Example:
+{
+  "id": "house_5", "name": "Available House 5", "kind": "House",
+  "x": 74, "y": 22, "entranceX": 74, "entranceY": 22, "floors": 1
+}
+This can be appended to plots without new C# code, provided the footprint is free.
+Allowed kinds: House, Inn, Workshop, Farm. This phase supports exactly one Inn.
+Keep x/y footprints inside the blocked border. Parcel IDs must be unique.
+
+Outside cells retain the existing Road zone as walkable open ground. This is
+not a detailed street layout or new terrain system. Building footprint cells
+are Blocked except the entrance tile. Existing TravelSystem routes around them
+and interacts near the entrance. Interiors, doors as objects, stairs, furniture,
+shared occupancy, and bed-derived capacity are not simulated in this phase.
+Direct low-level movement commands retain their previous behavior; no separate
+physics collision system has been introduced.
+
+The outdoor market remains a point at marketX/marketY (16,8 initially), rather
+than an enclosed building. The village entrance stays on the left border at
+(0,entranceY). Existing machinery stays outdoors at its processing.json position,
+using its existing single-tile Workshop marker. These machine markers are not
+additional full-sized buildings. Fishing spots remain in fishing.json.
+
+Validation rejects invalid dimensions/scale, out-of-bounds parcels, parcel
+collisions, market overlap, invalid floors, and entrances without an adjacent
+unreserved outdoor tile. Fishing/machinery positions now use the map's bounds
+and reject parcel/market conflicts. Machinery cannot overlap fishing spots.
+Do not surround an entrance with water: the route finder needs reachable land.
+Changing terrain dynamically after setup is outside this phase.
+
+NPC workflow is preserved. Starting non-merchants claim existing unowned houses;
+they do not turn arbitrary tiles into extra houses. Once available houses run
+out, later NPCs receive no HomeComponent. Shared occupancy and automatic inn
+housing policies remain a population-phase task. No population is added here.
+Inn rental capacity still comes from economy.json innBeds, not floor count.
+
+A 12 x 9 farm is a parcel containing individual one-tile crop positions. It is
+not a single 108-tile crop. Minami still owns/cultivates her npcs.json farmPlots
+count (9 initially). Whole-parcel ownership and shared-farm allocation have not
+been added; existing per-crop-tile ownership remains the source of truth.
+
+Implementation:
+- MapSettings, MapPlotDefinition, and MapPlotKind describe JSON layout data.
+- MapPlotComponent records parcel rectangles and floor metadata on anchors.
+- MapBlueprint creates the configured grid using existing tile components.
+- VillageBlueprint attaches existing BuildingComponent data at entrances.
+- NpcBlueprint claims available configured houses; original manual worlds
+  without GameSettings.Map retain their 32 x 20 free-tile workflow.
+- VillageComponent and ComponentDebugger expose size, scale, and parcel data.
+- GameSettingsLoader requires map.json and checks resource placement against it.
+No replacement ECS, world store, pathfinder, or command framework was added.
+Program.cs was not edited; its current 50-day loop is preserved.
+
+Validation:
+- Build passed with 0 errors and the same 20 existing nullable warnings.
+- 95 focused checks passed: dimensions, 22,500 unique map coordinates, footprints,
+  both 108-cell farms, housing availability, unchanged farmer workload, inn floor
+  metadata/capacity, actual travel around walls/water to all entrances and work
+  sites, cooking, market trading, rental/sleep, legacy manual setup, invalid JSON,
+  and fishing locations beyond the old bounds.
+- The existing spawn/map/simulation.Update workflow completed one game day with
+  the current three residents using a temporary console check (~30 seconds).
+- The full Program.cs 50-day run and population-scale performance were not run.
+  Repeated world scans now include 22,500 tiles, so large runs are slower.
+  Map storage/performance changes require a separate scoped follow-up.
+- Earlier fixed-layout checks assuming 640 configured map tiles are historical
+  expectations and are not claimed to pass against this intentional new layout.
+Temporary check projects are outside the repository; no permanent test project
+or new application entry point was added.

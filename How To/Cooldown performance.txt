@@ -1,0 +1,46 @@
+CooldownSystem performance
+
+CooldownSystem.Update now uses GetEntitiesWith<CooldownComponent>() instead
+of scanning every world entity. The existing component index skips unrelated
+terrain. Reporting does not change components, so the live query needs no list
+copy or cache. No scheduler, new component, or registration was added.
+
+IsReady and StartCooldown are unchanged. Attacks and skills continue to call
+those existing methods. Cooldown durations, exact readiness boundaries, and
+replacement/start timestamps retain their current behavior. Update still prints
+status every minute, including repeated READY messages; it does not remove
+expired cooldowns. Message order across entities is not guaranteed by the query.
+Program.cs, settings, and command handlers remain unchanged.
+
+Validation:
+- A temporary Simulation.Update workflow exercised actual AttackCommandHandler
+  commands: immediate repeat attacks were blocked, attacks became available at
+  the exact boundary, and successful attacks restarted cooldowns. It also checked
+  replacement durations, current messages, retained expired components, explicit
+  removal, and entity destruction.
+- Existing 95 map/gameplay, 27 survival AI, and 20 profiler checks passed.
+- Source diff is limited to the indexed loop and explanatory class/constructor/
+  update comments; existing reporting and readiness logic remain unchanged.
+- Console build passed with 0 errors and 20 existing nullable warnings on initial
+  compilation. Output used a temporary folder; no running app was stopped.
+  No production tests were deleted or new test framework added.
+
+Controlled Debug benchmark: 22,500 empty terrain entities plus cooldown entities,
+480 updates, three alternating original/updated pairs after warm-up. Time stayed
+fixed before expiry. Console writes were redirected to TextWriter.Null in both
+versions; message formatting was still performed. Median milliseconds:
+  3 cooldowns: original 528.969; updated 0.504.
+  400 cooldowns: original 631.125; updated 37.375 (about 16.9 times faster).
+Original source was copied before editing. This measures update/formatting cost,
+not real console rendering, complete 400-NPC gameplay, or command throughput.
+
+One-day village profile: 150x150 map, 3 residents, 1,440 game minutes.
+  Previous run: wall 2,880.04 ms; CooldownSystem 1,012.63 ms.
+  Current run: wall 2,097.93 ms; CooldownSystem 2.11 ms.
+The short village workload does not represent heavy cooldown use; the manual
+attack workflow and benchmark cover cooldown entities separately. Full-day
+samples include random gameplay and runtime variation, so the whole wall-time
+difference cannot be attributed solely to this change. ManaRegenerationSystem
+now leads at 1,190.36 ms and remains future work.
+
+Files changed: CooldownSystem.cs, this guide, and Cooldown profile.txt.

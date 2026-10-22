@@ -1,0 +1,57 @@
+ProcessingSystem performance
+
+ProcessingSystem.Update now queries ProcessingJobComponent instead of copying
+every world entity each minute. GetHosts follows the existing cooking/fishing
+approach: compare indexed host IDs with a HashSet and rebuild a world-ordered
+list only when membership changes. Count and ID checks catch equal-count host
+replacements. Rebuilds scan the world; ordinary updates with unchanged membership
+or no hosts avoid that terrain scan. Completed jobs remain indexed until collection.
+
+World order preserves the assignment of shared random output rolls and the order
+of operator checks. A stable list also allows completion to create output entities.
+Only host membership/order are cached: progress, ownership, operator markers,
+recipe requirements, and outputs remain live. Current job handlers do not start
+other hosts' jobs during Update. This uses the existing single-thread lifecycle.
+
+The complete update body and Start, Operate, Pause, Collect, and Busy methods
+are unchanged. Input reservation/spending, operator progress, automatic progress,
+paused time, tool/skill/station requirements, output groups, randomized quantities,
+seed creation, and machinery reservation until collection keep their existing
+behavior. Program.cs, JSON, and simulation registration are unchanged.
+
+Validation:
+- 30 seeded original/updated scenarios matched progress, completion, timestamps,
+  operation markers, collection results, output identities/quantities, and inventory
+  counts. They cover reverse job attachment, equal-count host replacement, manual
+  and automatic jobs, pause/resume, collection, repeated updates, and destruction.
+- All 70 existing shared-processing checks passed, including real Start input
+  spending, station/skill/tool rules, manual and automatic processing, collection,
+  weighted outputs, seed quantities, and AI use of processing.
+- Existing 95 map/gameplay, 27 survival AI, and 20 profiler checks passed.
+  Total existing regression checks passed: 212.
+- Source comparison confirmed the complete existing job-update body unchanged.
+- Console build passed with 0 errors and 20 existing nullable warnings on initial
+  compilation. Output used a temporary folder; no running app was stopped.
+  No production tests were deleted or new test framework added.
+
+Controlled Debug benchmark: 22,500 empty terrain entities plus job hosts,
+480 updates, three alternating original/updated pairs after warm-up. Automatic
+jobs stayed pending at a fixed clock. Median milliseconds:
+  3 jobs: original 826.758; updated 0.438.
+  400 jobs: original 757.972; updated 36.225 (about 20.9 times faster).
+Original source was copied before editing. These timings measure steady automatic
+job updates, not membership rebuilds, heavy manual validation, output production,
+or complete 400-NPC gameplay.
+
+One-day village profile: 150x150 map, 3 residents, 1,440 game minutes.
+  Previous run: wall 7,135.98 ms; ProcessingSystem 1,619.59 ms.
+  Current separate run: wall 5,827.31 ms; ProcessingSystem 2.65 ms.
+The first profile overlapped the tail of the processing regression run and was
+discarded for reporting. The separate run above finished after all checks.
+Full-day samples include random gameplay and runtime variation; their entire
+wall-time difference cannot be attributed solely to this change. The short run
+does not represent sustained active processing; focused checks and the benchmark
+exercise jobs separately. MerchantVisitSystem now leads at 1,521.65 ms and remains
+future work.
+
+Files changed: ProcessingSystem.cs, this guide, and Processing profile.txt.

@@ -1,0 +1,178 @@
+Population 3
+Progress: 3 NPCs, 240 minutes, 0.160 seconds
+Progress: 3 NPCs, 480 minutes, 0.449 seconds
+Progress: 3 NPCs, 720 minutes, 0.754 seconds
+Progress: 3 NPCs, 960 minutes, 1.028 seconds
+Progress: 3 NPCs, 1200 minutes, 1.231 seconds
+Progress: 3 NPCs, 1440 minutes, 1.409 seconds
+RESULT population=3; minutes=1440; setup_ms=317.657; simulation_ms=1408.843; entities=22535; dead=0; zero_hunger=0; seek_food=0; no_home=0; fatigue_at_least_90=0
+Jobs: Farmer=1, Fisher=1, Cook=1
+Activities: Sleep=3
+Capability: cooks_with_skill=1; crop_entities=9; assigned_farmland=9
+System update profile: 1403.47 ms measured; 20 system instances.
+System | Updates | Total ms | Average ms | Maximum ms | Share
+AIDecisionSystem | 1440 | 838.57 | 0.5823 | 26.9653 | 59.8%
+HungerSystem | 1440 | 357.55 | 0.2483 | 8.4944 | 25.5%
+AIActionExecutionSystem | 1440 | 77.56 | 0.0539 | 12.3853 | 5.5%
+FishingSystem | 1440 | 20.37 | 0.0141 | 4.3932 | 1.5%
+CookingSystem | 1440 | 14.74 | 0.0102 | 2.4405 | 1.1%
+FarmingSystem | 1440 | 14.34 | 0.0100 | 1.7715 | 1.0%
+SleepSystem | 1440 | 13.64 | 0.0095 | 3.3639 | 1.0%
+ScheduleSystem | 1440 | 11.60 | 0.0081 | 2.6963 | 0.8%
+NeedsSystem | 1440 | 11.37 | 0.0079 | 3.9371 | 0.8%
+MovementSystem | 1440 | 7.96 | 0.0055 | 1.7894 | 0.6%
+StatusEffectSystem | 1440 | 7.01 | 0.0049 | 2.3967 | 0.5%
+TravelSystem | 1440 | 6.69 | 0.0046 | 1.3616 | 0.5%
+MerchantVisitSystem | 1440 | 6.68 | 0.0046 | 4.9251 | 0.5%
+DeathSystem | 1440 | 5.57 | 0.0039 | 2.5946 | 0.4%
+InnSystem | 1440 | 2.58 | 0.0018 | 1.4502 | 0.2%
+ProcessingSystem | 1440 | 2.13 | 0.0015 | 0.9877 | 0.2%
+CooldownSystem | 1440 | 1.90 | 0.0013 | 1.2866 | 0.1%
+ManaRegenerationSystem | 1440 | 1.60 | 0.0011 | 0.9580 | 0.1%
+LeaseSystem | 1440 | 1.15 | 0.0008 | 0.2795 | 0.1%
+TimeSystem | 1440 | 0.45 | 0.0003 | 0.1887 | 0.0%
+
+
+
+Population 50
+Progress: 50 NPCs, 240 minutes, 0.174 seconds
+Progress: 50 NPCs, 480 minutes, 0.764 seconds
+Progress: 50 NPCs, 720 minutes, 1.680 seconds
+Progress: 50 NPCs, 960 minutes, 2.312 seconds
+Progress: 50 NPCs, 1200 minutes, 2.773 seconds
+Progress: 50 NPCs, 1440 minutes, 2.998 seconds
+RESULT population=50; minutes=1440; setup_ms=743.203; simulation_ms=2997.858; entities=22926; dead=0; zero_hunger=0; seek_food=8; no_home=46; fatigue_at_least_90=0
+Jobs: Farmer=17, Fisher=17, Cook=16
+Activities: Sleep=6, Wait=44
+Capability: cooks_with_skill=1; crop_entities=151; assigned_farmland=153
+System update profile: 2992.94 ms measured; 20 system instances.
+System | Updates | Total ms | Average ms | Maximum ms | Share
+AIDecisionSystem | 1440 | 2156.94 | 1.4979 | 27.4190 | 72.1%
+AIActionExecutionSystem | 1440 | 197.53 | 0.1372 | 10.5773 | 6.6%
+FishingSystem | 1440 | 169.03 | 0.1174 | 3.5700 | 5.6%
+HungerSystem | 1440 | 148.85 | 0.1034 | 3.6942 | 5.0%
+FarmingSystem | 1440 | 62.01 | 0.0431 | 1.1871 | 2.1%
+SleepSystem | 1440 | 56.55 | 0.0393 | 3.6040 | 1.9%
+ScheduleSystem | 1440 | 50.43 | 0.0350 | 3.3544 | 1.7%
+NeedsSystem | 1440 | 45.21 | 0.0314 | 3.1892 | 1.5%
+MovementSystem | 1440 | 28.32 | 0.0197 | 1.9784 | 0.9%
+CookingSystem | 1440 | 24.46 | 0.0170 | 2.2016 | 0.8%
+TravelSystem | 1440 | 15.03 | 0.0104 | 2.1084 | 0.5%
+DeathSystem | 1440 | 14.55 | 0.0101 | 3.1859 | 0.5%
+StatusEffectSystem | 1440 | 6.38 | 0.0044 | 2.1514 | 0.2%
+MerchantVisitSystem | 1440 | 5.95 | 0.0041 | 3.8774 | 0.2%
+InnSystem | 1440 | 4.07 | 0.0028 | 1.5432 | 0.1%
+ProcessingSystem | 1440 | 2.15 | 0.0015 | 0.9352 | 0.1%
+CooldownSystem | 1440 | 2.02 | 0.0014 | 1.1868 | 0.1%
+ManaRegenerationSystem | 1440 | 1.67 | 0.0012 | 0.9896 | 0.1%
+LeaseSystem | 1440 | 1.30 | 0.0009 | 0.3009 | 0.0%
+TimeSystem | 1440 | 0.50 | 0.0003 | 0.2286 | 0.0%
+
+
+
+Population 100
+Progress: 100 NPCs, 240 minutes, 0.230 seconds
+Progress: 100 NPCs, 480 minutes, 1.711 seconds
+Progress: 100 NPCs, 720 minutes, 2.814 seconds
+Progress: 100 NPCs, 960 minutes, 3.972 seconds
+Progress: 100 NPCs, 1200 minutes, 4.698 seconds
+Progress: 100 NPCs, 1440 minutes, 5.062 seconds
+RESULT population=100; minutes=1440; setup_ms=1098.680; simulation_ms=5062.117; entities=23242; dead=0; zero_hunger=0; seek_food=24; no_home=96; fatigue_at_least_90=0
+Jobs: Farmer=34, Fisher=33, Cook=33
+Activities: Sleep=6, Wait=94
+Capability: cooks_with_skill=1; crop_entities=212; assigned_farmland=216
+System update profile: 5056.70 ms measured; 20 system instances.
+System | Updates | Total ms | Average ms | Maximum ms | Share
+AIDecisionSystem | 1440 | 3921.27 | 2.7231 | 30.0331 | 77.5%
+AIActionExecutionSystem | 1440 | 350.74 | 0.2436 | 9.3921 | 6.9%
+FishingSystem | 1440 | 189.59 | 0.1317 | 2.5362 | 3.7%
+HungerSystem | 1440 | 142.63 | 0.0990 | 3.8245 | 2.8%
+SleepSystem | 1440 | 88.65 | 0.0616 | 3.5339 | 1.8%
+ScheduleSystem | 1440 | 81.27 | 0.0564 | 2.4930 | 1.6%
+NeedsSystem | 1440 | 76.40 | 0.0531 | 3.4398 | 1.5%
+FarmingSystem | 1440 | 74.39 | 0.0517 | 1.2645 | 1.5%
+MovementSystem | 1440 | 48.89 | 0.0339 | 2.0094 | 1.0%
+DeathSystem | 1440 | 21.37 | 0.0148 | 2.5232 | 0.4%
+TravelSystem | 1440 | 19.83 | 0.0138 | 1.6933 | 0.4%
+CookingSystem | 1440 | 16.77 | 0.0116 | 2.4281 | 0.3%
+StatusEffectSystem | 1440 | 6.44 | 0.0045 | 2.4303 | 0.1%
+MerchantVisitSystem | 1440 | 6.15 | 0.0043 | 3.6896 | 0.1%
+InnSystem | 1440 | 3.90 | 0.0027 | 1.4398 | 0.1%
+ProcessingSystem | 1440 | 2.26 | 0.0016 | 0.9885 | 0.0%
+CooldownSystem | 1440 | 2.16 | 0.0015 | 1.1719 | 0.0%
+ManaRegenerationSystem | 1440 | 1.92 | 0.0013 | 1.0382 | 0.0%
+LeaseSystem | 1440 | 1.44 | 0.0010 | 0.2723 | 0.0%
+TimeSystem | 1440 | 0.66 | 0.0005 | 0.2116 | 0.0%
+
+
+
+Population 200
+Progress: 200 NPCs, 240 minutes, 0.387 seconds
+Progress: 200 NPCs, 480 minutes, 5.526 seconds
+Progress: 200 NPCs, 720 minutes, 9.290 seconds
+Progress: 200 NPCs, 960 minutes, 11.538 seconds
+Progress: 200 NPCs, 1200 minutes, 13.070 seconds
+Progress: 200 NPCs, 1440 minutes, 13.689 seconds
+RESULT population=200; minutes=1440; setup_ms=1966.543; simulation_ms=13689.293; entities=23754; dead=0; zero_hunger=0; seek_food=59; no_home=196; fatigue_at_least_90=0
+Jobs: Farmer=67, Fisher=67, Cook=66
+Activities: Sleep=6, Wait=194
+Capability: cooks_with_skill=1; crop_entities=212; assigned_farmland=216
+System update profile: 13682.60 ms measured; 20 system instances.
+System | Updates | Total ms | Average ms | Maximum ms | Share
+AIDecisionSystem | 1440 | 11930.55 | 8.2851 | 98.0149 | 87.2%
+AIActionExecutionSystem | 1440 | 466.36 | 0.3239 | 16.7609 | 3.4%
+FishingSystem | 1440 | 276.43 | 0.1920 | 2.7020 | 2.0%
+SleepSystem | 1440 | 195.11 | 0.1355 | 3.7662 | 1.4%
+ScheduleSystem | 1440 | 190.81 | 0.1325 | 4.4406 | 1.4%
+NeedsSystem | 1440 | 163.52 | 0.1136 | 3.2075 | 1.2%
+HungerSystem | 1440 | 158.58 | 0.1101 | 4.7834 | 1.2%
+MovementSystem | 1440 | 97.33 | 0.0676 | 2.3255 | 0.7%
+FarmingSystem | 1440 | 87.21 | 0.0606 | 2.7053 | 0.6%
+DeathSystem | 1440 | 41.56 | 0.0289 | 2.5181 | 0.3%
+TravelSystem | 1440 | 27.49 | 0.0191 | 1.6915 | 0.2%
+CookingSystem | 1440 | 18.39 | 0.0128 | 2.5935 | 0.1%
+StatusEffectSystem | 1440 | 7.68 | 0.0053 | 2.7062 | 0.1%
+MerchantVisitSystem | 1440 | 6.96 | 0.0048 | 3.7903 | 0.1%
+InnSystem | 1440 | 4.57 | 0.0032 | 1.4857 | 0.0%
+ProcessingSystem | 1440 | 2.64 | 0.0018 | 1.0334 | 0.0%
+CooldownSystem | 1440 | 2.55 | 0.0018 | 1.3671 | 0.0%
+ManaRegenerationSystem | 1440 | 2.45 | 0.0017 | 1.2880 | 0.0%
+LeaseSystem | 1440 | 1.71 | 0.0012 | 0.2984 | 0.0%
+TimeSystem | 1440 | 0.70 | 0.0005 | 0.2176 | 0.0%
+
+
+
+Population 400
+Progress: 400 NPCs, 240 minutes, 0.597 seconds
+Progress: 400 NPCs, 480 minutes, 18.191 seconds
+Progress: 400 NPCs, 720 minutes, 44.470 seconds
+Progress: 400 NPCs, 960 minutes, 56.174 seconds
+Progress: 400 NPCs, 1200 minutes, 59.962 seconds
+Progress: 400 NPCs, 1440 minutes, 61.106 seconds
+RESULT population=400; minutes=1440; setup_ms=2925.889; simulation_ms=61106.158; entities=24716; dead=6; zero_hunger=62; seek_food=57; no_home=396; fatigue_at_least_90=0
+Jobs: Farmer=134, Fisher=133, Cook=133
+Activities: Sleep=6, Wait=394
+Capability: cooks_with_skill=1; crop_entities=214; assigned_farmland=216
+System update profile: 61097.13 ms measured; 20 system instances.
+System | Updates | Total ms | Average ms | Maximum ms | Share
+AIDecisionSystem | 1440 | 58257.95 | 40.4569 | 329.9628 | 95.4%
+AIActionExecutionSystem | 1440 | 738.47 | 0.5128 | 21.5983 | 1.2%
+SleepSystem | 1440 | 409.58 | 0.2844 | 5.9017 | 0.7%
+ScheduleSystem | 1440 | 367.42 | 0.2552 | 5.3381 | 0.6%
+FishingSystem | 1440 | 329.80 | 0.2290 | 2.7378 | 0.5%
+NeedsSystem | 1440 | 325.24 | 0.2259 | 4.7288 | 0.5%
+MovementSystem | 1440 | 195.15 | 0.1355 | 2.3221 | 0.3%
+HungerSystem | 1440 | 189.82 | 0.1318 | 7.4031 | 0.3%
+FarmingSystem | 1440 | 96.63 | 0.0671 | 1.6987 | 0.2%
+DeathSystem | 1440 | 89.46 | 0.0621 | 4.3144 | 0.1%
+TravelSystem | 1440 | 33.49 | 0.0233 | 1.5124 | 0.1%
+CookingSystem | 1440 | 20.08 | 0.0139 | 2.4642 | 0.0%
+StatusEffectSystem | 1440 | 14.74 | 0.0102 | 4.7911 | 0.0%
+MerchantVisitSystem | 1440 | 10.71 | 0.0074 | 6.5061 | 0.0%
+InnSystem | 1440 | 6.04 | 0.0042 | 2.4344 | 0.0%
+ProcessingSystem | 1440 | 3.52 | 0.0024 | 1.6201 | 0.0%
+ManaRegenerationSystem | 1440 | 2.95 | 0.0021 | 1.6942 | 0.0%
+CooldownSystem | 1440 | 2.84 | 0.0020 | 1.3914 | 0.0%
+LeaseSystem | 1440 | 2.29 | 0.0016 | 0.7026 | 0.0%
+TimeSystem | 1440 | 0.97 | 0.0007 | 0.3631 | 0.0%
+

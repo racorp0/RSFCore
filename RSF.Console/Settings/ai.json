@@ -1,0 +1,46 @@
+// Decision scores and timing. Plant processing uses processPoints; item prices and targets come from farming.json.
+{
+  "decision": {
+    "healingPoints": 1000,
+    "eatingPoints": 500,
+    "foodPreparationPenaltyPoints": 25,
+    "foodPreparationTimeWeight": 0.1,
+    "foodPreservationPoints": 350,
+    "healthSeverityWeight": 2,
+    "hungerSeverityWeight": 2,
+    "continuationBonus": 25,
+    "switchMargin": 20,
+    "purchaseCostWeight": 1,
+    "decisionInterval": {
+      "minutes": 5
+    },
+    "actionInterval": {
+      "minutes": 1
+    },
+    "retryDelay": {
+      "minutes": 15
+    }
+  },
+  "work": {
+    "beforeWorkHungerPercent": 60,
+    "breakHungerPercent": 60,
+    "preparationEatingPoints": 300,
+    "breakEatingPoints": 200,
+    "scheduleBonus": 50,
+    "plowPoints": 100,
+    "plantPoints": 150,
+    "cropPreferenceBonusPoints": 150,
+    "waterPoints": 300,
+    "harvestPoints": 400,
+    "fishingPoints": 100,
+    "offerPoints": 180,
+    "ingredientBuyingPoints": 100,
+    "breadPrice": 5,
+    // Fallback per-500g rate for manual worlds; loaded games use fishing.json species prices.
+    "fishPrice": 10,
+    "baitStockTarget": 5,
+    "fishMeatStockTargetGrams": 600,
+    "processPoints": 200,
+    "seedProductionBonusPoints": 100
+  }
+}

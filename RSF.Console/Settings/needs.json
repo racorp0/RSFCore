@@ -1,0 +1,27 @@
+// Survival rates and shared thresholds. Percent values are 0-100; bedtime and wake time are minutes after midnight.
+{
+  "hungerTickMinutes": 20,
+  "hungerLossPerTick": 1,
+  "starvationDamage": 5,
+  "breadHunger": 30,
+  "thresholds": {
+    "criticalHealthPercent": 25,
+    "healthyPercent": 60,
+    "urgentHungerPercent": 30,
+    "satisfiedHungerPercent": 60
+  },
+  "sleep": {
+    "awakeMinutesPerPoint": 20,
+    "sleepMinutesPerPoint": 5,
+    "preferredFatigue": 40,
+    "urgentFatigue": 90,
+    "wakeFatigue": 20,
+    "bedtimeMinute": 1320,
+    "wakeTimeMinute": 360,
+    "sleepPoints": 350,
+    "severityWeight": 2
+  },
+  "appleHunger": 5,
+  "minimumSoupHunger": 7,
+  "maximumSoupHunger": 11
+}

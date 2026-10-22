@@ -1,0 +1,31 @@
+One diagnostic baseline; not an optimization result.
+Build: Debug, existing 150 x 150 map, current three residents, 1,440 game minutes.
+Timings include system logging and wall-clock scheduling delays. Another Console
+process was running (its output DLL was locked); this is not directly comparable
+to the earlier ~30-second check, and profiler overhead was not isolated.
+No 400-NPC performance claim is made.
+
+Workload: 150x150 map; 3 residents; 1440 game minutes; 49323,60 ms wall time.
+System update profile: 49300,97 ms measured; 20 system instances.
+System | Updates | Total ms | Average ms | Maximum ms | Share
+MovementSystem | 1440 | 10136,24 | 7,0391 | 21,3237 | 20,6%
+AIDecisionSystem | 1440 | 5178,75 | 3,5964 | 63,6032 | 10,5%
+AIActionExecutionSystem | 1440 | 3032,39 | 2,1058 | 14,5183 | 6,2%
+ScheduleSystem | 1440 | 2792,00 | 1,9389 | 8,8030 | 5,7%
+NeedsSystem | 1440 | 2791,09 | 1,9383 | 7,2844 | 5,7%
+SleepSystem | 1440 | 2775,02 | 1,9271 | 6,9463 | 5,6%
+CookingSystem | 1440 | 2324,41 | 1,6142 | 4,9670 | 4,7%
+DeathSystem | 1440 | 2274,96 | 1,5798 | 8,5523 | 4,6%
+InnSystem | 1440 | 2266,93 | 1,5743 | 18,6122 | 4,6%
+StatusEffectSystem | 1440 | 2171,06 | 1,5077 | 4,4188 | 4,4%
+TravelSystem | 1440 | 2089,37 | 1,4510 | 4,3334 | 4,2%
+FarmingSystem | 1440 | 2009,63 | 1,3956 | 6,3261 | 4,1%
+ProcessingSystem | 1440 | 1870,08 | 1,2987 | 5,3027 | 3,8%
+FishingSystem | 1440 | 1866,40 | 1,2961 | 5,0070 | 3,8%
+LeaseSystem | 1440 | 1540,48 | 1,0698 | 4,7068 | 3,1%
+MerchantVisitSystem | 1440 | 1537,07 | 1,0674 | 5,5310 | 3,1%
+CooldownSystem | 1440 | 1241,95 | 0,8625 | 3,8085 | 2,5%
+ManaRegenerationSystem | 1440 | 1240,73 | 0,8616 | 5,3067 | 2,5%
+HungerSystem | 1440 | 160,90 | 0,1117 | 4,0711 | 0,3%
+TimeSystem | 1440 | 1,52 | 0,0011 | 0,2151 | 0,0%
+

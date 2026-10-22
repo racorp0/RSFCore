@@ -1,0 +1,69 @@
+Current update: river/lake/sea spots now use locations[].baitCatchChances in
+fishing.json. See How To/fishing locations.txt. Earlier phase notes below are
+retained as history; location-specific tables are now implemented.
+
+Typed bait: worms and pellets
+
+Edit RSF.Console/Settings/fishing.json. Each entry in baits declares:
+  id: stable identity, such as worm or pellet
+  name: displayed inventory name
+  price: gold per piece
+  merchantStock: number brought by each arriving merchant
+  catchChances: absolute percentages keyed by the exact fishTypes species name
+
+Example:
+{
+  "id": "pellet", "name": "Pellet Bait", "price": 2, "merchantStock": 20,
+  "catchChances": { "Carp": 60, "Catfish": 10, "Tilapia": 25 }
+}
+This gives 60% Carp, 10% Catfish, 25% Tilapia, and 5% no catch.
+Worms use 45%, 30%, 15%, and 10% no catch. Worms cost 1 gold and each
+merchant brings 30; pellets cost 2 gold and each merchant brings 20.
+
+Add another bait entry to JSON to make it available from later merchants.
+No new C# class is required. Missing species have zero chance. Chances must be
+0..100 and total at most 100. Skill locks remain misses without redistributing
+probabilities. Weight ranges, skill requirements, and fish prices remain in
+fishTypes. fishTypes.catchChancePercent is retained for legacy/manual tables;
+configured fishing uses baits.catchChances instead. Catch timing remains 5..240
+minutes as configured at the root of fishing.json.
+
+The worm ID must remain: existing fisher starting supplies and plowing rewards
+are worms. NPC starting bait quantity still comes from npcs.json. Each merchant
+uses the per-bait merchantStock values, not economy.json merchantBait. The old
+merchantBait and baitPrice economy settings remain as manual-world fallbacks.
+Existing merchants are not restocked when JSON changes; settings load at startup.
+
+BaitComponent now stores BaitId with Quantity. C# record `with` expressions copy
+all existing fields while changing only Quantity, keeping the bait identity
+when spending, updating, or splitting a stack. FishingAttemptComponent remembers
+the consumed BaitId, so its result works after the final bait item is gone.
+BaitRules shares lookup, prices, catch chances, and validation. Existing command,
+trade, AI, and fishing systems retain execution responsibilities.
+
+AI buys toward its existing total BaitStockTarget across usable bait types; this
+is not a separate target per type. It uses the first suitable unlisted bait in
+inventory and keeps the existing price-sensitive purchase scoring. Selecting
+bait by expected profit is not part of this phase. Posted sale stock cannot be
+used remotely for fishing. Partial purchases retain the correct bait identity.
+
+Manual worlds without GameSettings preserve worm fishing with the river's old
+catchChancePercent table and legacy village prices. New configured bait types
+need loaded settings. JSON references are case-sensitive for IDs and species.
+
+Files changed: BaitDefinition and BaitRules added; bait and fishing-attempt
+components extended; RiverComponent stores bait definitions; BaitBlueprint,
+InventoryStacks, FishingSystem, AIWorkDecision, AIWorkExecution,
+VillageAIDecision, VillageAIExecution, MerchantVisitSystem, ComponentDebugger,
+GameSettingsLoader, fishing.json, and economy.json updated.
+Program.cs is unchanged. Separate river/lake/sea tables remain a later phase.
+
+Validation completed:
+- Console project build: 0 errors; clean compilation reported 20 pre-existing
+  nullable warnings, with no new warnings from this feature.
+- 139 new typed bait checks, 42 existing fishing checks, 23 fish pricing/trade
+  checks, 70 processing checks, 76 cooking checks, and 27 survival AI checks
+  passed (377 total). Temporary check projects were rebuilt against this Core DLL.
+- The existing Program.cs 15-day run completed to Spring Day 16. A visiting
+  merchant carried both Worm Bait and Pellet Bait. Long-term village economic
+  survival is outside this bait feature and is not established by these checks.

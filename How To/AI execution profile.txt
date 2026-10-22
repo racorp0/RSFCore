@@ -1,0 +1,29 @@
+Post-AI-execution optimization diagnostic run, Debug build.
+Current three-resident 150 x 150 village; one game day. Random gameplay,
+logging, and machine load vary. The paired executor-loop benchmark isolates
+the optimized loop; this full-run profile is supporting evidence.
+
+Workload: 150x150 map; 3 residents; 1440 game minutes; 25778,93 ms wall time.
+System update profile: 25762,52 ms measured; 20 system instances.
+System | Updates | Total ms | Average ms | Maximum ms | Share
+NeedsSystem | 1440 | 2079,43 | 1,4440 | 7,8520 | 8,1%
+SleepSystem | 1440 | 2056,66 | 1,4282 | 13,0709 | 8,0%
+ScheduleSystem | 1440 | 2021,91 | 1,4041 | 6,2182 | 7,8%
+StatusEffectSystem | 1440 | 1860,48 | 1,2920 | 15,3138 | 7,2%
+InnSystem | 1440 | 1855,04 | 1,2882 | 12,1148 | 7,2%
+FishingSystem | 1440 | 1841,97 | 1,2791 | 18,7986 | 7,1%
+TravelSystem | 1440 | 1817,26 | 1,2620 | 16,5403 | 7,1%
+CookingSystem | 1440 | 1807,19 | 1,2550 | 10,2962 | 7,0%
+DeathSystem | 1440 | 1704,97 | 1,1840 | 20,7711 | 6,6%
+FarmingSystem | 1440 | 1676,25 | 1,1641 | 5,4091 | 6,5%
+ProcessingSystem | 1440 | 1529,52 | 1,0622 | 6,7394 | 5,9%
+LeaseSystem | 1440 | 1242,31 | 0,8627 | 6,7721 | 4,8%
+MerchantVisitSystem | 1440 | 1236,24 | 0,8585 | 10,6525 | 4,8%
+CooldownSystem | 1440 | 1097,20 | 0,7619 | 2,5159 | 4,3%
+ManaRegenerationSystem | 1440 | 1026,50 | 0,7128 | 11,7492 | 4,0%
+AIDecisionSystem | 1440 | 688,67 | 0,4782 | 30,4516 | 2,7%
+HungerSystem | 1440 | 121,81 | 0,0846 | 6,7736 | 0,5%
+AIActionExecutionSystem | 1440 | 83,90 | 0,0583 | 16,0558 | 0,3%
+MovementSystem | 1440 | 14,14 | 0,0098 | 1,5729 | 0,1%
+TimeSystem | 1440 | 1,06 | 0,0007 | 0,2939 | 0,0%
+

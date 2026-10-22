@@ -1,0 +1,53 @@
+ManaRegenerationSystem performance
+
+ManaRegenerationSystem.Update now queries ManaRegenerationComponent instead of
+scanning all world entities. Both existing mana/regeneration checks remain in
+the loop. The component index skips terrain and entities without regeneration.
+No cache, new system, scheduler, or registration was introduced. Program.cs and
+settings remain unchanged.
+
+RegenerateMana is unchanged: a due update grants one tick capped at maximum mana.
+It does not catch up multiple missed intervals. When mana changes, LastTickAt
+becomes the current minute; when mana stays full, the timestamp stays unchanged.
+This optimization does not add death checks or alter those existing behaviors.
+
+The live query is safe here because ticks only replace existing regeneration
+values, without adding/removing index entries. This project's .NET runtime
+supports replacement during dictionary enumeration. Future logic that adds or
+removes regeneration entries inside Update would need a list snapshot first.
+Between-update membership changes are picked up automatically. Query order is
+not guaranteed, so notifications between different entities may change order;
+regeneration only affects each entity's own data.
+
+Validation:
+- A temporary Simulation.Update workflow passed exact interval boundaries, the
+  mana cap, unchanged full-mana timestamps, recovery after spending, a large
+  elapsed gap granting one tick, missing components, regeneration removal and
+  reattachment, and destroyed entities.
+- Existing 95 map/gameplay, 27 survival AI, and 20 profiler checks passed.
+- Source comparison confirmed the existing update body and RegenerateMana helper
+  unchanged. The diff contains the query and explanatory comments only.
+- Console build passed with 0 errors and 20 existing nullable warnings on initial
+  compilation. Output used a temporary folder; no running app was stopped.
+  No production tests were deleted or new test framework added.
+
+Controlled Debug benchmark: 22,500 empty terrain entities plus regenerating
+entities, 480 updates, three alternating original/updated pairs after warm-up.
+Clock time stayed fixed before a tick was due. Median milliseconds:
+  3 regenerating entities: original 706.227; updated 0.662.
+  400 regenerating entities: original 765.084; updated 38.935 (about 19.7 times faster).
+Original source was copied before editing. These timings measure selection/timing
+checks, not active notification costs or complete 400-NPC gameplay.
+
+One-day village profile: 150x150 map, 3 residents, 1,440 game minutes.
+  Previous run: wall 2,097.93 ms; ManaRegenerationSystem 1,190.36 ms.
+  Current run: wall 1,189.38 ms; ManaRegenerationSystem 1.46 ms.
+The village workload does not represent heavy active mana regeneration; the
+manual workflow and benchmark cover regeneration entities separately. Full-day
+samples include random gameplay and runtime variation, so their entire wall-time
+difference cannot be attributed solely to this change. AI decisions now lead at
+737.07 ms, followed by HungerSystem at 267.97 ms. A representative larger-NPC
+profile is recommended before further optimization; three residents do not
+establish full 400-NPC performance.
+
+Files changed: ManaRegenerationSystem.cs, this guide, and Mana regeneration profile.txt.

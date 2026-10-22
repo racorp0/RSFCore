@@ -1,0 +1,169 @@
+CURRENT COOKING SCHEMA: see How To/cooking phase 1.txt. recipes.json now uses
+shared-style inputs/options and weighted Meal outputs; older cooking fields below
+are historical. Cooking skill/taste progression remains a later phase.
+
+Shared processing: processing.json
+
+Use RSF.Console/Settings/processing.json for threshing, seed extraction, and future
+profession-independent conversions. farming.json now contains growth and harvest
+rules only. Program.cs remains unchanged. Run:
+  dotnet run --project RSF.Console/RSF.Console.csproj
+This copies changed source JSON into the executable's Settings directory. Loading
+occurs once; --no-build skips the copy. Nine configuration files are now required.
+
+Recipe example
+{
+  "id": "extract_tomato_seeds",
+  "name": "Extract Tomato Seeds",
+  "inputs": [
+    { "options": [ { "itemId": "tomato", "quantity": 1 } ] }
+  ],
+  "tools": null,
+  "processingStation": "seed_extractor",
+  "processingMinutes": 30,
+  "requiresOperator": false,
+  "requiredSkill": { "id": "farming", "minimumLevel": 1 },
+  "outputs": [
+    {
+      "options": [
+        {
+          "kind": "Seed",
+          "plantId": "tomato",
+          "chancePercent": 100,
+          "minimumQuantity": 2,
+          "maximumQuantity": 5
+        }
+      ]
+    }
+  ]
+}
+
+Input groups: AND between groups, OR within options
+Each input group is required, and exactly one full option from each group is chosen.
+For example, one group can accept 2 manure OR 5 vegetable_scraps, while another
+requires 1 straw. Partial alternatives do not mix: 1 manure + 3 scraps is not enough.
+The planner tries JSON order and backtracks when a choice would prevent later
+required groups. Example: group 1 accepts tomato OR cabbage, group 2 needs tomato;
+with one of each it reserves cabbage first and tomato second. A unit cannot satisfy
+two groups. The selected quantity can span several inventory stacks of the same ID.
+All requirements pass before anything is consumed. Deposited sale stock and tool
+entities are excluded. Item inputs use itemId. Seed inputs use kind Seed and plantId.
+At most 32 required input groups are allowed to bound recursive search depth.
+
+Inputs and output identities
+- Item means the existing PlantProduceComponent item stack, identified by ItemId.
+  Despite the component's historical name, it has no crop restriction. It can carry
+  a configured wood block, manure, thread, grain, or other profession's material.
+- Seed means a real PlantSeedComponent referencing a known plant; its outputs work
+  directly with existing planting, seed markets, and inventory quantities.
+- Input item IDs must be known from harvest outputs, processing outputs, or the
+  optional items list in processing.json. An items entry uses itemId, name,
+  sellPrice, merchantStockTarget, and cookStockTarget, with ordinary positive
+  quantity defaults. Definitions create metadata, not free inventory supplies.
+- Item outputs also need name and may set sellPrice, merchantStockTarget, and
+  cookStockTarget. Repeated item definitions must agree on name and trade metadata.
+- IDs, skill names, tools, station types, and recipes are JSON data. Adding another
+  recipe using these supported mechanics needs no profession-specific C# script.
+
+Tools and machinery are different
+- tools: null or [] means no carried tool is required. Otherwise list reusable tool
+  IDs, such as ["hand_sickle"]. These tools must be in the NPC's inventory and not
+  deposited for sale. They are not consumed and do not substitute for machinery.
+  This uses carried tool availability, matching RSF's watering-can/fishing-rod style;
+  it does not introduce additional equipment slots.
+- Top-level tools defines each tool's id and name. Add tool IDs to a resident's
+  tools list in npcs.json to supply them initially.
+- processingStation names a machinery type, or null for a station-free manual job.
+  Top-level stations gives instances: id, stationType, name, x, y. One station hosts
+  one job. Multiple instances can share a type. Stations reuse unoccupied Building
+  tiles on the current map and are marked Workshop so houses cannot overlap them.
+- NPCs physically travel to interaction range. Shared stations are public; an owned
+  station can only be used by its owner. Station tool IDs are never inventory tools.
+
+Skills and operators are independent
+- requiredSkill: null lets anyone eligible start. Otherwise give id/minimumLevel.
+- NPC processingSkills in npcs.json maps arbitrary skill IDs to levels. Existing
+  cooking and fishing skill components are also recognized. Starting Minami has
+  farming level 1; other generic skills must be supplied as profile data.
+- requiresOperator true progresses only while its owner actively operates the job
+  with the required tools/skill and without traveling, sleeping, fishing, or cooking.
+  Leaving or changing activity pauses it. Returning resumes without spending inputs.
+- requiresOperator false continues at the station after activation, even if the NPC
+  leaves or later loses the activation skill. An optional starting skill is still
+  checked once. Automatic jobs require a station to hold their independent state.
+- A station-free manual job stays on its NPC. Other professions can perform shared
+  recipes when their schedules, needs, skills, tools, and resources permit.
+
+Completion and probability
+- Each output group rolls independently. Within a group at most one option wins.
+  Integer chancePercent values total at most 100; remaining probability means no
+  output for that group. Equal minimumQuantity/maximumQuantity gives a fixed count.
+- Rice grain can use one 100-percent option with quantity 5-20. The delivered
+  threshing recipe retains exactly 20 to preserve existing food balancing.
+- Thread quality can use one group's options at 5% perfect, 20% good, 75% normal.
+  Exactly one quality is produced; these are not independent success rolls.
+- Wood can use one group with 75% one block OR 25% ten branches. For a guaranteed
+  block AND a 25% branch byproduct, use two separate output groups instead.
+- Quantities roll inclusively after selecting an option. Results roll once at
+  completion, never on pause/resume/collection. Completed items stay at the station
+  until collected; a zero-output result still needs collection to release its host.
+
+Ownership and AI
+Inputs are spent once at start. The initiating NPC owns the job, resumes manual
+work, and collects its outputs. Other NPCs cannot take the job or its products.
+Paused/running/finished jobs reserve their station until collection. Walking away
+is not cancellation. There is no cancellation/refund or job reassignment command.
+A dead owner's automatic machine can finish, but no automatic inheritance or rescue
+of that job is implemented yet. Station destruction/ownership-transfer mechanics
+are outside this feature.
+
+AI uses existing needs and work schedules. Urgent needs can interrupt manual work;
+finished jobs are collected after higher-priority needs are handled. Seed recipes
+are chosen while carried seed stock is below each plant's seedStockTarget. The
+configured work.seedProductionBonusPoints gives seed replenishment priority before
+all available harvest material is processed into ingredients. Other processing is
+resource-limited. Unavailable tools/skills/stations/inputs do not create fake output.
+
+Initial recipes and machinery
+- Village Thresher at (14,10): manual, farming level 1, 30 minutes; harvested rice
+  becomes 20 rice grain. No carried tool required by the delivered recipe.
+- Village Seed Extractor at (14,12): automatic, farming level 1 to activate,
+  30 minutes; one crop harvest item produces 2-5 plantable seeds. Rice, cabbage,
+  and tomato extraction recipes are explicit JSON entries and may be edited.
+New plants need an extraction recipe if seed extraction for them is desired; they
+still receive starting/merchant seeds through their ordinary plant definition.
+
+Architecture and C# notes
+ProcessingSystem owns validation/execution, progress, completion, and collection;
+FarmingSystem now only handles crops and harvests. ProcessingRules shares read-only
+requirement checks and input planning with the AI. The planner keeps a reservation
+dictionary and remembers failed combinations to avoid repeating equivalent work.
+ProcessingJobComponent is data on the machinery or NPC, while an
+OperatingProcessComponent marks active manual operation. Removing that marker
+pauses work without deleting progress. StartProcessingCommand,
+OperateProcessingCommand, PauseProcessingCommand, and CollectProcessingCommand
+all use the existing dispatcher. No separate command/event/simulation framework
+or external dependency was introduced.
+
+Migration
+processingRecipes moved out of farming.json into processing.json recipes. The
+former inputItemId/inputQuantity pair is now inputs/options. Former plain outputs
+are now weighted outputs/options. ProcessCropCommand and immediate
+FarmingSystem.ProcessCrop were replaced by shared start/operate/pause/collect
+commands and ProcessingSystem. Historical examples and old temporary checks using
+that immediate API need migration; they were not deleted or counted as passing.
+This does not change cooking recipes, crop growth, or resolve long-term starvation.
+
+Verification
+- Console/Core build passed with zero errors and 20 existing nullable warnings.
+- 70 focused processing checks passed: input reservation/backtracking and split
+  stacks, activation requirements, held-tool/machinery separation, manual pause/
+  resume, unattended automatic work, station-free manual work, one-time spending,
+  exclusive weighted boundaries, independent output groups, no-output completion,
+  seed quantity endpoints/plantability, collection/ownership, invalid JSON, and
+  full AI operation/collection by farmer and fisher. Hunger decay was disabled in
+  the isolated AI checks to separate processing from existing scarcity problems.
+- Existing survival AI (27) and fishing (42) checks passed: 139 checks in total.
+- The ordinary two-day Program.cs workflow also completed using the new settings.
+- Old immediate crop-processing checks are not counted as passing unchanged; their
+  superseded API was replaced by shared timed start/operate/pause/collect commands.

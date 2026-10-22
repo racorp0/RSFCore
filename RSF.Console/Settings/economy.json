@@ -1,0 +1,38 @@
+// Village economy and visitor timing. Plant seeds and product trade targets are configured in farming.json.
+{
+  // Histories appear in the existing NPC and village debugger output, without extra per-minute notifications.
+  "transactionHistory": {
+    "enabled": true,
+    "maximumEntries": 2000
+  },
+  // Rolling sales and affordable shortages adjust NPC offers gradually; manual prices stay explicit.
+  "market": {
+    "updateIntervalMinutes": 360,
+    "trackingIntervalMinutes": 15,
+    "salesWindowMinutes": 4320,
+    "targetStockCoverageMinutes": 2880,
+    "coverageTolerancePercent": 25,
+    "minimumPriceMultiplier": 0.5,
+    "maximumPriceMultiplier": 2.0,
+    "maximumChangePercentPerUpdate": 10,
+    "initialPriceMultipliers": {
+      "item:rice_grain": 1.0
+    }
+  },
+  "minutesPerTravelTile": 1,
+  "innBeds": 2,
+  "merchantBread": 3,
+  "merchantFishTarget": 3,
+  "rentPerDay": 5,
+  "minMerchantDays": 5,
+  "maxMerchantDays": 12,
+  "maxMerchants": 1,
+  "merchantIdleMinutes": 120,
+  "maxVisitMinutes": 4320,
+  "merchantGold": 200,
+  // Legacy manual-world values; configured bait prices and merchant stock are in fishing.json.
+  "merchantBait": 30,
+  "merchantSpice": 30,
+  "baitPrice": 1,
+  "spicePrice": 1
+}

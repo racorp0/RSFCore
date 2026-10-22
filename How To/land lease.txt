@@ -1,0 +1,200 @@
+using RSF.Core.Blueprints;
+using RSF.Core.CommandHandlers;
+using RSF.Core.Commands;
+using RSF.Core.Common;
+using RSF.Core.Components;
+using RSF.Core.Debugging;
+using RSF.Core.Entities;
+using RSF.Core.Simulation;
+using RSF.Core.Systems;
+using System.Net.NetworkInformation;
+
+
+
+Simulation simulation = new();
+
+CommandDispatcher dispatcher =
+    new();
+
+TimeSystem timeSystem =
+    new(simulation.Clock);
+
+simulation.AddSystem(
+    timeSystem);
+
+MovementSystem movementSystem =
+    new(simulation.World);
+
+StatSystem statSystem =
+    new(simulation.World);
+
+HungerSystem hungerSystem =
+    new(simulation.World);
+
+simulation.AddSystem(
+    hungerSystem);
+
+ManaRegenerationSystem manaRegenerationSystem =
+    new(
+        simulation.World,
+        simulation.Clock);
+
+simulation.AddSystem(
+    manaRegenerationSystem);
+
+CooldownSystem cooldownSystem =
+    new(
+        simulation.World,
+        simulation.Clock);
+
+simulation.AddSystem(
+    cooldownSystem);
+
+StatusEffectSystem statusEffectSystem =
+    new(
+        simulation.World,
+        simulation.Clock);
+
+simulation.AddSystem(
+    statusEffectSystem);
+
+DeathSystem deathSystem =
+    new(simulation.World);
+
+simulation.AddSystem(
+    deathSystem);
+
+InventorySystem inventorySystem =
+    new(simulation.World);
+
+EquipmentSystem equipmentSystem =
+    new(
+        simulation.World,
+        statSystem);
+
+ItemEffectSystem itemEffectSystem =
+    new(
+        simulation.World,
+        simulation.Clock);
+
+LeaseSystem leaseSystem = new(
+    simulation.World,
+    simulation.Clock);
+
+simulation.AddSystem(
+    leaseSystem);
+
+
+/*dispatch_registry*/
+
+
+UseSkillCommandHandler skillHandler =
+    new(
+        simulation.World,
+        cooldownSystem);
+
+dispatcher.Register(skillHandler);
+
+AttackCommandHandler attackHandler =
+    new(
+        simulation.World,
+        simulation.Clock,
+        cooldownSystem);
+
+dispatcher.Register(attackHandler);
+
+MoveCommandHandler moveHandler =
+    new(
+        simulation.World,
+        movementSystem);
+
+dispatcher.Register(
+    moveHandler);
+
+PickupCommandHandler pickupHandler =
+    new(simulation.World, inventorySystem);
+
+EquipCommandHandler equipHandler =
+    new(
+        simulation.World,
+        inventorySystem,
+        equipmentSystem);
+
+dispatcher.Register(equipHandler);
+
+UnequipCommandHandler unequipHandler =
+    new(
+        equipmentSystem,
+        simulation.World);
+
+dispatcher.Register(unequipHandler);
+
+DropCommandHandler dropHandler =
+    new(
+        inventorySystem,
+        equipmentSystem);
+
+dispatcher.Register(pickupHandler);
+dispatcher.Register(dropHandler);
+
+UseItemCommandHandler useItemHandler =
+    new(
+        simulation.World,
+        inventorySystem,
+        itemEffectSystem);
+
+dispatcher.Register(useItemHandler);
+
+/*spawn*/
+
+HumanBlueprint humanBlueprint = new();
+
+Entity marima = humanBlueprint.Spawn(
+    simulation.World,
+    "Marima Hamabe",
+    10,
+    10);
+
+Entity land = simulation.World.CreateEntity();
+
+Entity hamabeFamily = simulation.World.CreateEntity();
+
+simulation.World.Add(
+    land,
+    new LandComponent("Hamabe Orchard"));
+
+simulation.World.Add(
+    land,
+    new OwnershipComponent(hamabeFamily.Id));
+
+long leaseMinutes =
+    30L * GameDate.MinutesPerDay;
+
+simulation.World.Add(
+    land,
+    new LandLeaseComponent(
+        marima.Id,
+        simulation.Clock.CurrentMinute,
+        simulation.Clock.CurrentMinute.Add(
+            leaseMinutes)));
+
+simulation.Update(leaseMinutes - 1);
+
+Console.WriteLine(
+    $"Before expiry: {simulation.Clock.CurrentMinute.Value}");
+
+simulation.Update(1);
+
+Console.WriteLine(
+    $"After expiry: {simulation.Clock.CurrentMinute.Value}");
+
+Console.WriteLine(
+    WorldDebugger.DumpEntity(
+        simulation.World,
+        marima));
+
+Console.WriteLine(
+    WorldDebugger.DumpEntity(
+        simulation.World,
+        land));
+

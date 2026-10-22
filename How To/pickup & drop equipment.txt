@@ -1,0 +1,133 @@
+using RSF.Core.CommandHandlers;
+using RSF.Core.Commands;
+using RSF.Core.Components;
+using RSF.Core.Debugging;
+using RSF.Core.Entities;
+using RSF.Core.Simulation;
+using RSF.Core.Systems;
+
+
+
+Simulation simulation = new();
+
+CommandDispatcher dispatcher =
+    new();
+
+var player =
+    simulation.World.CreateEntity();
+
+
+
+Entity sword =
+    simulation.World.CreateEntity();
+
+simulation.World.Add(
+    player,
+    new InventoryComponent());
+
+simulation.World.Add(
+    player,
+    new EquipmentComponent());
+
+simulation.World.Add(
+    sword,
+    new ItemComponent("Iron Sword"));
+
+InventorySystem inventorySystem =
+    new(simulation.World);
+
+PickupCommandHandler pickupHandler =
+    new(simulation.World, inventorySystem);
+
+EquipmentSystem equipmentSystem =
+    new(simulation.World);
+
+EquipCommandHandler equipHandler =
+    new(
+        simulation.World,
+        inventorySystem,
+        equipmentSystem);
+
+dispatcher.Register(equipHandler);
+
+UnequipCommandHandler unequipHandler =
+    new(
+        equipmentSystem,
+        simulation.World);
+
+dispatcher.Register(unequipHandler);
+
+DropCommandHandler dropHandler =
+    new(
+        inventorySystem,
+        equipmentSystem);
+
+dispatcher.Register(pickupHandler);
+dispatcher.Register(dropHandler);
+
+dispatcher.Dispatch(
+    new PickupCommand(player, sword));
+
+dispatcher.Dispatch(
+    new DropCommand(player, sword));
+
+dispatcher.Dispatch(
+    new PickupCommand(player, sword));
+
+dispatcher.Dispatch(
+    new PickupCommand(player, sword));
+
+dispatcher.Dispatch(
+    new DropCommand(player, sword));
+
+
+
+
+dispatcher.Dispatch(
+    new PickupCommand(player, sword));
+
+
+
+dispatcher.Dispatch(
+    new EquipCommand(player, sword));
+
+Console.WriteLine(
+    WorldDebugger.DumpEntity(
+        simulation.World,
+        player));
+
+dispatcher.Dispatch(
+    new DropCommand(player, sword));
+
+dispatcher.Dispatch(
+    new UnequipCommand(player));
+
+Console.WriteLine(
+    WorldDebugger.DumpEntity(
+        simulation.World,
+        player));
+
+dispatcher.Dispatch(
+    new DropCommand(player, sword));
+
+if (simulation.World.TryGet<EquipmentComponent>(
+    player,
+    out var equipment))
+{
+    Console.WriteLine(
+        $"Weapon equipped: {equipment.Weapon}");
+}
+
+Console.WriteLine(
+    WorldDebugger.DumpEntity(
+        simulation.World,
+        player));
+
+Console.WriteLine(
+    WorldDebugger.DumpEntity(
+        simulation.World,
+        sword));
+
+Console.WriteLine(
+    WorldDebugger.DumpWorld(
+        simulation.World));

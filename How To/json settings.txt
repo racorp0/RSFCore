@@ -1,0 +1,81 @@
+CURRENT COOKING SCHEMA: see How To/cooking phase 1.txt. recipes.json now uses
+shared-style inputs/options and weighted Meal outputs; older cooking fields below
+are historical. Cooking skill/taste progression remains a later phase.
+
+CURRENT PROCESSING: see How To/shared processing.txt. Processing recipes now live
+in processing.json and use input alternatives, weighted outputs, timed jobs, tools,
+skills, and machinery. Earlier immediate-processing examples below are historical.
+
+RSF JSON settings
+
+Edit RSF.Console/Settings/*.json and restart the simulation:
+  dotnet run --project RSF.Console/RSF.Console.csproj
+The build copies changed settings into the executable's Settings directory. No C#
+edit is needed for balancing. --no-build skips copying source settings; edit the
+output Settings directory when running an already-built executable directly.
+AppContext.BaseDirectory resolves settings independently of the working directory.
+Files also copy on publish. There is no live reloading or save-game loading.
+
+Current files
+- farming.json: plants (including rice), their seed supplies, growth/lifecycles,
+  harvestOutputs, processingRecipes, and worm rewards. All output items have their
+  own stable IDs, names, inclusive quantity ranges, sell prices, and merchant/cook
+  stock targets. See How To/adding plants.txt for complete examples and migration.
+- fishing.json: catch time range, species chances, weight ranges, minimum skills.
+- recipes.json: cooking recipes use ingredients keyed by output item IDs, fish
+  portion costs, spice costs, time, servings/effects, quality, stock, and prices.
+- needs.json: hunger loss, starvation, simple food effects, needs thresholds, sleep.
+- ai.json: survival/work scores, update/retry timing, work thresholds, fish/bread
+  prices and fish/bait targets. processPoints scores generic inventory processing;
+  cropPreferenceBonusPoints increases planting priority below preferred plot counts.
+- schedules.json: job/life-stage and optional personal daily schedule templates.
+- economy.json: village travel, rent, inn beds, visitor timing, fish demand, bait,
+  spice, food, and gold supplies. Plant/product economy values live in farming.json.
+- npcs.json: defaults for visitors/unlisted humans, plus the resident spawn list.
+  Profiles configure stats, gold, hunger, skills, bait, bread, spices, assigned land,
+  and optional personal overrides. Seed supplies now come solely from each plant.
+
+Syntax and validation
+// comments, block comments, and trailing commas are accepted. Unknown properties,
+unknown enum names, invalid ranges, missing files, missing outputs, conflicting
+item metadata, unknown item references, and processing cycles fail startup with
+an error identifying the source file. IDs use letters, digits, underscores, or
+hyphens. Enum values use names such as Single, Repeat, Farmer, and Work.
+
+Omitted properties use generic type defaults; keep fields explicit when balancing.
+Personal needs, ai, work, sleep, and cooking objects replace shared objects rather
+than merging their individual JSON fields. Copy a whole shared object before
+making personal changes. A personal schedule names an entry in schedules.json.
+Listed residents have independent profiles; defaults applies to unlisted NPCs.
+Merchant gold/cargo are then supplied by the existing visitor lifecycle.
+
+Examples
+- Rice growth and output are now on its ordinary plant definition. There is no
+  separate compiled rice definition or top-level growthDays/grainsPerHarvestedPlant.
+- Set an output's minimumQuantity and maximumQuantity both to 20 for a fixed yield;
+  set them to 2 and 5 for an inclusive random yield. Each listed output rolls once.
+- One normal game day is 1440 minutes. Growth and watering measure elapsed minutes,
+  not midnight. growthDays counts growth intervals; regrowthDays applies to Repeat.
+- Fishing chances are absolute percentages totaling at most 100. Locked species
+  become no catch rather than redistributing probability. Skills do not auto-level.
+- Cooking ingredients can contain { "rice_grain": 5 }. Any declared harvest or
+  processing output may be referenced. Costs are checked across inventory stacks.
+- GameDuration values in ai.json use { "minutes": 5 }. Schedules use minute-of-day
+  numbers from 0 to 1439, supporting overnight intervals and rejecting overlaps.
+
+C# data flow
+GameSettingsLoader deserializes JSON into ordinary C# objects and validates their
+relationships. It indexes product metadata once. SimulationSetup registers settings
+before constructing systems; blueprints create existing ECS entities/components.
+Systems read in-memory data rather than reading files during every NPC update.
+Commands remain the action execution path. No external library or AI service is used.
+Manual worlds can still configure basic systems without files, but plant and cooking
+features require definitions supplied through GameSettings. Legacy rice-specific
+commands, components, blueprints, and compiled default cooking recipes were removed
+at the developer's request; historical examples using them require migration.
+
+Scope
+Constants defining engine rules, map geometry, and unrelated combat/equipment code
+remain C#. All plant-specific definitions, harvest output names/quantities, and crop
+processing/cooking ingredient choices now come from JSON. Supported lifecycles are
+Single and Repeat; inventing a different mechanic still requires C# behavior.

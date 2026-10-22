@@ -1,0 +1,30 @@
+Current update: river/lake/sea spots now use locations[].baitCatchChances in
+fishing.json. See How To/fishing locations.txt. Earlier phase notes below are
+retained as history; location-specific tables are now implemented.
+
+Fish pricing - phase 1
+
+Set pricePer500Grams on each species in RSF.Console/Settings/fishing.json.
+Starting rates: Carp 10, Catfish 12, Tilapia 8 gold per 500 grams.
+
+Whole-fish sale price = (weightGrams * pricePer500Grams + 499) / 500.
+This uses whole-number division, so adding 499 rounds a fraction of gold up.
+At 10 gold per 500 g: 200 g costs 4, 500 g costs 10, 750 g costs 15,
+and 1200 g costs 24 gold. Fish remain individual items when traded.
+
+FishPricing.SalePrice is shared by both existing AI offer execution paths.
+It uses long arithmetic before converting a valid result to int, preventing overflow.
+Invalid fish or unknown species in a configured world return zero and are not offered.
+Manual worlds without GameSettings use the NPC FishPrice as a per-500g fallback.
+Existing manually constructed fish definitions default to 10 gold per 500 grams.
+
+The loader rejects nonpositive rates and configured maximum fish prices exceeding
+int.MaxValue. Existing posted offers are fixed until offered again, as before.
+Manual OfferItem commands still accept an explicit custom price.
+Cooking portions, catch chances, bait, and the Program.cs workflow are unchanged.
+Bait types and river/lake/sea catch tables belong to later phases.
+
+Validation: Console project build passed with 0 errors and 20 existing nullable
+warnings. 23 temporary checks covered rates, rounding, invalid inputs, overflow,
+settings validation, inventory transfer, and gold conservation during purchase.
+These checks are outside the repository; there is no new permanent test project.

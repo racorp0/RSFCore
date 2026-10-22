@@ -1,0 +1,24 @@
+Workload: 150x150 map; 3 residents; 1440 game minutes; 7135,98 ms wall time.
+System update profile: 7125,50 ms measured; 20 system instances.
+System | Updates | Total ms | Average ms | Maximum ms | Share
+ProcessingSystem | 1440 | 1619,59 | 1,1247 | 4,5650 | 22,7%
+MerchantVisitSystem | 1440 | 1301,68 | 0,9039 | 7,3824 | 18,3%
+LeaseSystem | 1440 | 1217,05 | 0,8452 | 3,4479 | 17,1%
+ManaRegenerationSystem | 1440 | 1047,51 | 0,7274 | 10,0859 | 14,7%
+CooldownSystem | 1440 | 1046,63 | 0,7268 | 4,0993 | 14,7%
+AIDecisionSystem | 1440 | 540,88 | 0,3756 | 31,9816 | 7,6%
+HungerSystem | 1440 | 134,24 | 0,0932 | 5,9136 | 1,9%
+AIActionExecutionSystem | 1440 | 74,15 | 0,0515 | 9,7335 | 1,0%
+FishingSystem | 1440 | 21,94 | 0,0152 | 3,2462 | 0,3%
+SleepSystem | 1440 | 20,68 | 0,0144 | 4,0229 | 0,3%
+ScheduleSystem | 1440 | 17,32 | 0,0120 | 2,0640 | 0,2%
+CookingSystem | 1440 | 13,53 | 0,0094 | 2,2703 | 0,2%
+NeedsSystem | 1440 | 13,28 | 0,0092 | 2,8595 | 0,2%
+FarmingSystem | 1440 | 12,64 | 0,0088 | 1,5279 | 0,2%
+StatusEffectSystem | 1440 | 11,07 | 0,0077 | 3,0796 | 0,2%
+MovementSystem | 1440 | 10,22 | 0,0071 | 1,6843 | 0,1%
+TravelSystem | 1440 | 8,56 | 0,0059 | 1,1908 | 0,1%
+DeathSystem | 1440 | 7,40 | 0,0051 | 2,6148 | 0,1%
+InnSystem | 1440 | 6,40 | 0,0044 | 1,8339 | 0,1%
+TimeSystem | 1440 | 0,73 | 0,0005 | 0,1817 | 0,0%
+

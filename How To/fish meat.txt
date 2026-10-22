@@ -1,0 +1,83 @@
+Species-specific fish meat (replaces FishPortion)
+
+FishPortionComponent, FishPortions, the FishPortion input kind, and the old
+fishPortionGrams setting have been removed with approval. Cooking and processing
+now use ordinary Item ingredients, with species meat quantities measured in grams.
+
+In fishing.json, every fishTypes species needs:
+  meatItemId: e.g. carp_meat
+  meatName: e.g. Carp Meat
+  meatYieldPercent: e.g. 80 (retain 80%, lose 20% while chopping)
+All eight starting species have separate meat identities and 80% yield.
+Each meat ID must be valid, unique, and different from other registered products.
+Names cannot be empty; yields must be between 1 and 100.
+
+Example input in recipes.json:
+{ "kind": "Item", "itemId": "carp_meat", "quantity": 200 }
+For meat, this means 200 grams; rice_grain and other ordinary items still use
+item counts. A single options group can offer Carp Meat, Catfish Meat, Tilapia
+Meat, or other species as alternatives. One option must be fully supplied: 100 g
+Carp Meat plus 100 g Catfish Meat does not satisfy a 200 g single-species option.
+Multiple stacks or whole fish of the same species can combine their meat grams.
+
+The supplied Fish Stew and Fish Rice each accept 200 g of any of the eight meat
+items. Their cooking time, servings, quality rolls, food effects, spices, grain,
+and meal sale price are preserved. There are no new quality or skill systems.
+Whole-fish prices still depend on original caught weight, before chopping loss.
+
+Chopping happens automatically when a fully validated recipe selects a whole
+fish. There is no new chopping command, timer, or station in this phase.
+Example: 1,000 g Carp yields 800 g Carp Meat. Cooking consumes 200 g and stores
+600 g. The next batch leaves 400 g, then 200 g, then zero. The 20% loss applies
+once to a whole fish; stored meat never loses another 20%. Usable yield rounds
+down to whole grams: 333 g at 80% yields 266 g. Small fish no longer guarantee
+one meal; a 200 g fish yields only 160 g, below a 200 g recipe requirement.
+Missing any required ingredient leaves whole fish, meat, and other inputs intact.
+Prepared meat is spent before chopping another whole fish of the chosen species.
+
+Implementation uses existing PlantProduceComponent item stacks, not a new meat
+inventory system. Its Quantity is grams for registered meat IDs. Inventory dumps
+show names and grams, such as Carp Meat 600 g. Existing stack splitting and trade
+quantity operations preserve the meat item ID. Auto sale of prepared meat is not
+introduced; cooked meals remain the cook's normal sale stock.
+FishMeat shares species lookup and usable grams. ProcessingRules plans virtual
+meat grams from whole fish, then creates leftover stacks only during spending.
+Long arithmetic prevents overflow when calculating percentage yields.
+
+The JSON loader indexes meat IDs before checking processing/cooking references.
+Processing recipes can therefore also reference these ordinary meat Item IDs.
+A new fish's meat becomes a known product through fishing.json, but add its meat
+ID to a recipe's options if that recipe should accept the new species.
+Manual worlds need registered species meat metadata to convert whole fish;
+there is no hardcoded species-to-meat fallback.
+
+AI configuration migration in ai.json:
+  old: fishStockTarget (portion count)
+  new: fishMeatStockTargetGrams (600 initially)
+The cook counts unlisted prepared meat plus net yield of whole fish. Below the
+target it may buy a whole fish whose meat appears in a known recipe. One large
+purchase can exceed the target because whole fish remain indivisible sale items.
+Existing needs, schedules, purchasing costs, and trading validation still apply.
+Species-specific costs can still exceed a meal's fixed price; this change does
+not establish a balanced or sustainable economy.
+
+Code changes: FishMeat added; old portion files removed; ProcessingRules,
+CookingRules, CookingSystem, AIWorkDecision, CookingSettingsComponent,
+AIWorkSettingsComponent, RiverFishDefinition, ProcessingDefinition,
+PlantProduceComponent, ComponentDebugger, and GameSettingsLoader updated.
+Settings changed: fishing.json, recipes.json, ai.json. Program.cs is unchanged.
+The old portion C# API and JSON schema are deliberately incompatible; old custom
+recipes/configurations must migrate to meat Item IDs and gram quantities.
+
+Validation:
+- Build passed: 0 errors, 20 existing nullable warnings.
+- 192 species-meat checks and 84 migrated cooking checks passed, covering all
+  species, exact loss/leftovers, prepared-meat priority, small fish, split stacks,
+  alternatives, repeated input reservations, JSON metadata, inventory display,
+  and AI gram thresholds. Original temporary portion tests were retained; their
+  old expectations were migrated in a separate temporary copy, not counted as
+  unchanged tests passing.
+- 3,816 unchanged regression checks passed: 3,515 locations, 139 bait, 70 shared
+  processing, 42 fishing, 23 pricing/trading, 27 survival AI (4,092 total checks).
+- Existing Program.cs 15-day simulation completed to Spring Day 16 and displayed
+  Carp Meat and Perch Meat leftovers in grams. No Program.cs edits were made.

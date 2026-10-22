@@ -1,0 +1,16 @@
+// All lifetimes are elapsed game minutes. Ordinary cooked food cannot exceed twelve hours.
+{
+  "ordinaryMealShelfLifeMinutes": 720,
+  "breadShelfLifeMinutes": 10080,
+  "rawProduceShelfLifeMinutes": 7200,
+  "freshFishShelfLifeMinutes": 1440,
+  "freshMeatShelfLifeMinutes": 1440,
+  // Commercial smoker stock. Other residents cook only when they need to eat.
+  "preservedFoodStockTarget": 16,
+  "preservationReserveBatches": 0,
+  "merchantJourneyFoodTarget": 12,
+  "departureShoppingMinutes": 360,
+  "minimumJourneyShelfLifeMinutes": 43200,
+  "departureShoppingPoints": 400,
+  "freshFoodPreferencePoints": 100
+}

@@ -1,0 +1,43 @@
+NeedsSystem performance
+
+NeedsSystem now uses World.GetEntitiesWith<NeedsSettingsComponent>() instead of
+checking every world entity. The existing ComponentStore index selects entities
+that opted into needs evaluation, skipping the 22,500 terrain entities.
+No new cache, scheduling mechanism, component, or registration is required.
+
+The calculations, validation, dead/invalid-health guards, and recovery thresholds
+are unchanged. Health and hunger values remain maintained by their existing
+systems. A need still stays active until its configured recovery target is met.
+Program.cs and its five-day simulation workflow are unchanged.
+
+C# foreach visits the entities returned by the component query. This is a live
+enumeration: changing NeedsState is safe because it is a different component
+collection. Do not add/remove NeedsSettings or destroy entities inside this loop.
+The current loop does neither. Settings changes between updates are picked up
+automatically. Query order is not guaranteed; normal needs calculations only
+read and update the current NPC and do not compete for shared resources.
+Invalid settings still throw; partial updates before an exception can occur in
+a different entity order. No recovery behavior for invalid configuration was added.
+
+Validation:
+- 1,204 temporary checks passed against the copied original system or explicit
+  expectations: health/hunger boundaries, previous need flags, missing components,
+  invalid health, death, clamping, settings added/removed, and invalid settings.
+- Existing 95 map/gameplay, 27 survival AI, and 20 profiler checks passed.
+- Console build passed with 0 errors and 20 existing nullable warnings.
+  Output was isolated in a temporary folder; no running application was stopped.
+
+Controlled Debug benchmark: 22,500 empty terrain entities, 480 updates, three
+alternating original/updated pairs after warm-up. Median elapsed milliseconds:
+  3 NPCs: original 644.118; updated 0.573.
+  400 NPCs: original 948.765; updated 82.101 (about 11.6 times faster).
+This measures NeedsSystem only, not the cost of a complete 400-NPC village.
+
+One-day simulation profile, 150x150 village, 3 residents, 1,440 game minutes:
+  Previous run: 25,778.93 ms wall time; NeedsSystem 2,079.43 ms.
+  Current run: 24,331.22 ms wall time; NeedsSystem 24.01 ms.
+These full simulation runs are single samples with random gameplay and runtime
+variation, not a controlled overall speedup measurement. Other systems still
+scan terrain; InnSystem, ScheduleSystem, and SleepSystem lead the current profile.
+
+Only NeedsSystem.cs and the two Needs documentation files changed in this phase.

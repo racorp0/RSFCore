@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="RSF.Console/RSF.Console.csproj" />
+  <Project Path="RSF.Core/RSF.Core.csproj" />
+</Solution>

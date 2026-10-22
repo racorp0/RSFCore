@@ -1,0 +1,80 @@
+AI action execution performance
+
+AIActionExecutionSystem no longer copies all map entities every game minute.
+Its private GetActors method queries the existing AISettingsComponent index and
+keeps a small actor list in the original world order. It compares current IDs
+with the previous set each update; additions/removals or equal-count membership
+changes rebuild the ordered list. Removing and reattaching settings alone does
+not change execution priority, because the actor's world position is unchanged.
+No global world/component index or new event framework was introduced.
+
+Why order matters: two buyers may compete for the same stock. Component index
+attachment order can differ from world order, so using the raw query directly
+could select a different buyer. Rebuilding from world order only when actors
+change preserves the existing priority while avoiding repeated terrain scans.
+A cached list is safe when commands create items or remove actors: it is not a
+live component dictionary enumeration, and each actor's components are checked
+again before acting. Destroyed actors are skipped through those normal checks.
+The next update refreshes membership before executing more commands.
+
+Only membership and actor order are cached. Decisions, pending flags, action
+cooldowns, health, inventory, targets, ownership, resources, travel destinations,
+and command results still use live components. No changes were made to command
+handlers, scores, validation, interruption order, retry behavior, or game time.
+The existing command pipeline remains the only action execution mechanism.
+
+C# HashSet<EntityId>.Contains checks whether current actors belong to the cached
+set without searching a whole list each time. Count plus membership comparison
+also catches replacing one actor with another while keeping the same count.
+The cached IDs are the existing EntityId values, not another identity system.
+If membership is unchanged, a normal update only visits indexed AI entities.
+A full world-order pass happens when actors are first found or membership changes.
+
+The actor set is selected at the start of Update, just as normal command execution
+uses a stable update snapshot. Existing gameplay handlers do not attach AISettings
+to previously non-AI entities during this pass. If extending handlers to do that,
+attach settings before the executor update when same-update participation matters.
+Actors created by a command participate on the next update. This cache is intended
+for the existing single-thread simulation lifecycle, not concurrent world writes.
+
+Files changed: AIActionExecutionSystem.cs only, plus this guide and timing report.
+Program.cs and the existing registration/update workflow are unchanged.
+The user's current Program loop runs five days; focused profiling uses one day.
+
+Validation:
+- 95 old/new behavior, command-order, actor membership, and mutation checks passed.
+  The original executor and its helper sources were copied into a temporary
+  baseline namespace. Checks include all activity values, pending/cooldown/death
+  guards, interruption and retry branches, actual competing trade purchases,
+  reverse settings attachment order, reattachment, equal-count actor swaps,
+  reused world dictionary slots, actor destruction, and item creation in a handler.
+- Clean Console build to isolated OutputPath passed with 0 errors and the same
+  20 existing nullable warnings. No running Console process was stopped.
+- No production tests were deleted or permanent test infrastructure introduced.
+
+Controlled executor-loop benchmark (Debug, steady actor membership):
+22,500 positioned terrain entities plus waiting AI actors. Each of 480 updates
+marks those actors pending and executes their Wait activity. Three paired runs
+alternate original/new order; warm-up includes initial membership construction.
+  3 actors: old median 746.061 ms; cached median 1.084 ms.
+  400 actors: old median 816.054 ms; cached median 77.793 ms (10.49x).
+Final pending/activity states matched. These are loop-overhead measurements,
+not a full 400-NPC simulation or a benchmark of pathfinding, cooking, or trading.
+The actual competing-purchase tests separately verify order and resource effects.
+
+95 map/gameplay checks, 27 survival AI checks, and 20 profiler behavior checks
+also passed (237 checks total, excluding benchmark outcome checks). The normal
+five-day Program run is preserved but was not repeated for this optimization.
+
+Integrated profile:
+- The normal spawn/map/simulation.Update workflow completed one game day with
+  three residents in 25.779 seconds.
+- AIActionExecutionSystem used 83.90 ms across 1,440 updates (0.3% of measured
+  system time), compared with 2,683.56 ms in the prior diagnostic profile.
+- These whole-day runs have different random outcomes and machine load; their
+  timing difference is not a controlled whole-village speedup measurement.
+- NeedsSystem (2,079.43 ms), SleepSystem (2,056.66 ms), and ScheduleSystem
+  (2,021.91 ms) are now the largest measured remaining systems.
+- See How To/AI execution profile.txt for all final system timings.
+No full 400-NPC village has been benchmarked, and the 10.49x loop improvement
+must not be treated as a whole-game speedup.

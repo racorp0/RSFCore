@@ -1,0 +1,372 @@
+using RSF.Core.CommandHandlers;
+using RSF.Core.Commands;
+using RSF.Core.Common;
+using RSF.Core.Components;
+using RSF.Core.Debugging;
+using RSF.Core.Entities;
+using RSF.Core.Simulation;
+using RSF.Core.Systems;
+
+
+
+Simulation simulation = new();
+
+CommandDispatcher dispatcher =
+    new();
+
+TimeSystem timeSystem =
+    new(simulation.Clock);
+
+simulation.AddSystem(
+    timeSystem);
+
+MovementSystem movementSystem =
+    new(simulation.World);
+
+
+
+//player
+
+var player =
+    simulation.World.CreateEntity();
+
+simulation.World.Add(
+    player,
+    new HealthComponent(75, 100));
+
+simulation.World.Add(
+    player,
+    new ManaComponent(30, 100));
+
+simulation.World.Add(
+    player,
+    new HungerComponent(40, 100));
+
+simulation.World.Add(
+    player,
+    new InventoryComponent());
+
+simulation.World.Add(
+    player,
+    new EquipmentComponent());
+
+simulation.World.Add(
+    player,
+    new ManaRegenerationComponent(
+        5,
+        GameDuration.FromMinutes(1),
+        simulation.Clock.CurrentMinute));
+
+Entity enemy =
+    simulation.World.CreateEntity();
+
+simulation.World.Add(
+    enemy,
+    new HealthComponent(
+        50,
+        50));
+
+//equipment
+
+Entity sword =
+    simulation.World.CreateEntity();
+
+
+simulation.World.Add(
+    sword,
+    new ItemComponent("Iron Sword"));
+
+simulation.World.Add(
+    sword,
+    new EquipmentItemComponent(
+        EquipmentSlot.Weapon));
+
+Entity sword2 =
+    simulation.World.CreateEntity();
+
+
+simulation.World.Add(
+    sword2,
+    new ItemComponent("Blood Sword"));
+
+simulation.World.Add(
+    sword2,
+    new EquipmentItemComponent(
+        EquipmentSlot.Weapon));
+
+//potion
+
+Entity potion =
+    simulation.World.CreateEntity();
+
+simulation.World.Add(
+    potion,
+    new ItemComponent("Health Potion"));
+
+simulation.World.Add(
+    potion,
+    new ConsumableItemComponent());
+
+simulation.World.Add(
+    potion,
+    new RestoreHealthEffectComponent(25));
+
+Entity manaPotion =
+    simulation.World.CreateEntity();
+
+simulation.World.Add(
+    manaPotion,
+    new ItemComponent("Mana Potion"));
+
+simulation.World.Add(
+    manaPotion,
+    new ConsumableItemComponent());
+
+simulation.World.Add(
+    manaPotion,
+    new RestoreManaEffectComponent(40));
+
+Entity magicalFood =
+    simulation.World.CreateEntity();
+
+simulation.World.Add(
+    magicalFood,
+    new ItemComponent("Magical Food"));
+
+simulation.World.Add(
+    magicalFood,
+    new ConsumableItemComponent());
+
+simulation.World.Add(
+    magicalFood,
+    new RestoreHealthEffectComponent(10));
+
+simulation.World.Add(
+    magicalFood,
+    new RestoreManaEffectComponent(20));
+
+    Entity poisonPotion =
+    simulation.World.CreateEntity();
+    
+    simulation.World.Add(
+        poisonPotion,
+        new ItemComponent("Poison Potion"));
+    
+    simulation.World.Add(
+        poisonPotion,
+        new ConsumableItemComponent());
+    
+    simulation.World.Add(
+        poisonPotion,
+        new ApplyPoisonEffectComponent(
+            30,
+            GameDuration.FromMinutes(1),
+            GameDuration.FromMinutes(5)));
+
+simulation.World.Add(
+    magicalFood,
+    new RestoreManaEffectComponent(20));
+
+Entity regenPotion =
+simulation.World.CreateEntity();
+
+simulation.World.Add(
+    regenPotion,
+    new ItemComponent("Regen Potion"));
+
+simulation.World.Add(
+    regenPotion,
+    new ConsumableItemComponent());
+
+simulation.World.Add(
+    regenPotion,
+    new ApplyRegenerationEffectComponent(
+        2,
+        GameDuration.FromMinutes(1),
+        GameDuration.FromMinutes(5)));
+
+//item
+
+Entity bread =
+    simulation.World.CreateEntity();
+
+simulation.World.Add(
+    bread,
+    new ItemComponent("Bread"));
+
+simulation.World.Add(
+    bread,
+    new ConsumableItemComponent());
+
+simulation.World.Add(
+    bread,
+    new RestoreHungerEffectComponent(30));
+
+/*dispatch_registry*/
+
+ManaRegenerationSystem manaRegenerationSystem =
+    new(
+        simulation.World,
+        simulation.Clock);
+
+simulation.AddSystem(
+    manaRegenerationSystem);
+
+CooldownSystem cooldownSystem =
+    new(
+        simulation.World,
+        simulation.Clock);
+
+simulation.AddSystem(
+    cooldownSystem);
+
+UseSkillCommandHandler skillHandler =
+    new(
+        simulation.World,
+        cooldownSystem);
+
+dispatcher.Register(skillHandler);
+
+AttackCommandHandler attackHandler =
+    new(
+        simulation.World,
+        simulation.Clock,
+        cooldownSystem);
+
+dispatcher.Register(attackHandler);
+
+MoveCommandHandler moveHandler =
+    new(
+        simulation.World,
+        movementSystem);
+
+dispatcher.Register(
+    moveHandler);
+
+StatusEffectSystem statusEffectSystem =
+    new(
+        simulation.World,
+        simulation.Clock);
+
+simulation.AddSystem(
+    statusEffectSystem);
+
+DeathSystem deathSystem =
+    new(simulation.World);
+
+simulation.AddSystem(
+    deathSystem);
+
+InventorySystem inventorySystem =
+    new(simulation.World);
+
+PickupCommandHandler pickupHandler =
+    new(simulation.World, inventorySystem);
+
+EquipmentSystem equipmentSystem =
+    new(simulation.World);
+
+EquipCommandHandler equipHandler =
+    new(
+        simulation.World,
+        inventorySystem,
+        equipmentSystem);
+
+dispatcher.Register(equipHandler);
+
+UnequipCommandHandler unequipHandler =
+    new(
+        equipmentSystem,
+        simulation.World);
+
+dispatcher.Register(unequipHandler);
+
+DropCommandHandler dropHandler =
+    new(
+        inventorySystem,
+        equipmentSystem);
+
+dispatcher.Register(pickupHandler);
+dispatcher.Register(dropHandler);
+
+
+ItemEffectSystem itemEffectSystem =
+    new(
+        simulation.World,
+        simulation.Clock);
+
+UseItemCommandHandler useItemHandler =
+    new(
+        simulation.World,
+        inventorySystem,
+        itemEffectSystem);
+
+dispatcher.Register(useItemHandler);
+
+/*dispatch_action*/
+
+Console.WriteLine(
+    WorldDebugger.DumpEntity(
+        simulation.World,
+        enemy));
+
+
+dispatcher.Dispatch(
+    new AttackCommand(
+        player,
+        enemy));
+
+dispatcher.Dispatch(
+    new AttackCommand(
+        player,
+        enemy));
+
+Console.WriteLine(
+    WorldDebugger.DumpEntity(
+        simulation.World,
+        enemy));
+
+for (int i = 0; i < 5; i++)
+{
+    simulation.Update(1.0f);
+}
+
+dispatcher.Dispatch(
+    new AttackCommand(
+        player,
+        enemy));
+
+Console.WriteLine(
+    WorldDebugger.DumpEntity(
+        simulation.World,
+        enemy));
+
+dispatcher.Dispatch(
+    new UseSkillCommand(
+        player,
+        enemy));
+
+dispatcher.Dispatch(
+    new UseSkillCommand(
+        player,
+        enemy));
+
+for (int i = 0; i < 5; i++)
+{
+    simulation.Update(1.0f);
+}
+
+dispatcher.Dispatch(
+    new UseSkillCommand(
+        player,
+        enemy));
+
+for (int i = 0; i < 5; i++)
+{
+    simulation.Update(1.0f);
+}
+
+dispatcher.Dispatch(
+    new UseSkillCommand(
+        player,
+        enemy));

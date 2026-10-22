@@ -1,0 +1,54 @@
+CookingSystem performance
+
+CookingSystem.Update now selects active CookingAttemptComponent entities through
+the existing component index instead of copying every map entity each minute.
+The private GetCooks method follows the established InnSystem approach: compare
+current cook IDs with a HashSet and rebuild a world-ordered list only when active
+membership changes. A rebuild still scans the world, but unchanged membership
+does not. An empty world of active cooks needs no terrain scan.
+
+World order matters because the system shares one Random generator. Changing
+completion order could assign different quality/output rolls to different cooks.
+The cached list preserves that order even if attempts were attached in reverse.
+Count plus ID membership detects replacing a cook without changing the count.
+The stable list remains safe while cancellation removes attempts and completion
+creates meal entities. Only membership/order are cached; batch data, access,
+inventories, and settings are read live. Current completion handlers do not start
+other cooks' batches inside this update. This uses the existing single-thread
+simulation lifecycle without a new scheduling mechanism.
+
+The complete batch completion body, Start, and Cancel are unchanged. Recipe
+requirements, ingredient planning/spending, species-meat quantities, cooking
+time, output groups, quantities, quality rolls, and restoration effects remain
+on their existing paths. Program.cs, JSON, and registration are unchanged.
+
+Validation:
+- 30 seeded original/updated scenarios matched per-cook pending states, meal
+  outputs, quality, hunger restoration, and health restoration. Scenarios used
+  reverse attempt attachment, equal-count cook replacement, simultaneous
+  completion, cancellation, later batches, missing inventory, and destruction.
+- Existing 95 map/gameplay, 27 survival AI, and 20 profiler checks passed.
+  The map checks include real cooking Start, fish ingredient use, and completion.
+- Source comparison confirmed the existing batch completion body unchanged.
+- Console build passed with 0 errors and 20 existing nullable warnings on initial
+  compilation. Output used a temporary folder; no running app was stopped.
+  No production tests were deleted or new test framework added.
+
+Controlled Debug benchmark: 22,500 empty terrain entities plus cooks and their
+individual kitchen entities, 480 updates, three alternating original/updated
+pairs after warm-up. Batches remained pending at a fixed clock. Median ms:
+  3 cooks: original 798.790; updated 1.931.
+  400 cooks: original 992.967; updated 173.917 (about 5.7 times faster).
+This measures steady pending-batch updates, not full 400-NPC gameplay, initial
+membership rebuild cost, or meal production throughput. Original source was
+copied before editing for comparison.
+
+One-day village profile: 150x150 map, 3 residents, 1,440 game minutes.
+  Previous run: wall 11,887.51 ms; CookingSystem 1,762.84 ms.
+  Current run: wall 13,541.64 ms; CookingSystem 18.32 ms.
+The whole run was slower because other systems took longer. Random gameplay and
+runtime variation affect these single samples; no overall speedup is claimed.
+The paired benchmark isolates the cooking update improvement. FarmingSystem
+leads the latest profile at 2,234.70 ms and remains future work.
+
+Files changed: CookingSystem.cs, this guide, and Cooking profile.txt.

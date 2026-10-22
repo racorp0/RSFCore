@@ -1,0 +1,87 @@
+AI decision performance: shared filtered candidates
+
+The existing AIDecisionSystem now iterates World.GetEntitiesWith<AISettingsComponent>()
+for its actor loop. It no longer copies every terrain entity into the actor list.
+NPC settings, needs, urgent interruptions, travel stability, failed target expiry,
+review intervals, score calculations, continuation bonuses, switch margins, and
+execution commands are preserved.
+
+AIDecisionSnapshot is an internal helper containing lists for inventory owners,
+owned entities, fishing waters, processing jobs/stations, and inn guests. It is
+created once when the first NPC in this Update actually reaches decision-making,
+then shared with other due NPCs. If all actors are dead, dependent, travelling,
+or waiting for their ordinary review, no candidate snapshot is built. The
+existing actor-specific state checks still run so critical needs can interrupt.
+
+The helper first collects relevant IDs using the six existing component indexes.
+It then scans world order once, using one ID membership test to skip terrain
+and inspecting component membership only on relevant entities. It retains
+that order rather than using individual component storage order for targets:
+equal-score choices must continue selecting the same seller, farm tile, water,
+or station as before. Each object can enter multiple lists, so NPC-hosted jobs
+and stations holding existing jobs are not lost. Existing helpers still validate
+health, ownership, prices, proximity planning, and component values.
+
+These are short-lived entity-reference lists, not deeply copied components or a
+long-lived world cache. They are discarded after each AI Update. Later stock,
+ownership, visitors, jobs, or component changes become visible next update.
+Current decision code only changes AI state, preparation flags, and merchant
+departure flags; it does not create/destroy stock, transfer ownership, or add jobs
+during these list iterations. Existing execution systems make those mutations
+later in their normal simulation order.
+
+C# `snapshot ??= new AIDecisionSnapshot(world)` means: create the helper only if
+it has not already been created. The data helper avoids repeating six different
+full-world searches for every NPC. It adds no new system, scheduler, persistent
+index, or replacement storage architecture. Game time still advances minute by
+minute, and Program.cs, gameplay settings, and system registration are unchanged.
+
+Files changed: AIDecisionSystem, AIWorkDecision, VillageAIDecision, ProcessingAI;
+AIDecisionSnapshot added. The helper methods now receive the filtered snapshot
+instead of the old full entity list; these are internal implementation APIs.
+
+Validation:
+- 2,075 state-property/equivalence checks compare the copied original decision
+  system/helpers against optimized code on the same world state. They include
+  HP/hunger priority, before-work/break meals, retries/cooldowns, travel, death,
+  dependent life stages, missing state, available/blocked purchases, equal-score
+  sellers with reverse component attachment order, farm growth/harvest/dry states,
+  cooking, processing start/resume/completion and NPC-hosted jobs, visitor sleep,
+  affordability/departure, and resources introduced between updates. Tests reset
+  AI state, food-preparation flags, and visitor departure before each comparison.
+- The reference sources were preserved in a temporary baseline namespace; no
+  production gameplay tests or functionality were removed.
+- 95 map/gameplay, 27 survival AI, and 20 profiler checks passed (2,217 total,
+  excluding the benchmark's additional state-equivalence comparisons).
+- Console project build passed to isolated OutputPath: 0 errors, the same 20
+  existing nullable warnings. The running Console process was not stopped.
+
+Controlled AI-only Debug benchmark:
+22,500 positioned terrain entities plus synthetic fisher NPCs. NPCs were due
+every measured game minute and had fixed tools/bait, resources, needs, and work
+schedules. Old and new code used the same world with AI state reset between
+trials. Three measurement pairs alternated old/new order; warm-up preceded them.
+All final writable AI state properties matched in every paired measurement.
+  3 actors, 120 decision minutes: old median 1,480.117 ms; new 104.103 ms (14.22x).
+  400 actors, 6 decision minutes: old median 11,997.544 ms; new 274.333 ms (43.73x).
+This isolates decision work. It is not a full 400-NPC village simulation, and
+ratios must not be extrapolated to the whole game. Current normal NPC review
+intervals remain configured in ai.json (five minutes initially).
+
+One lightweight world-order pass remains when building a due-update snapshot to preserve target
+order. Pairwise NPC trading searches also remain. Subsequent performance work
+can address the other measured systems independently, one feature at a time.
+
+Final integrated profile:
+- Existing three-resident 150 x 150 workflow completed one day in 30.819 seconds.
+- AI decision updates used 623.00 ms across 1,440 system calls (2.0% of measured
+  system time), compared with 5,569.39 ms in the prior movement-only profile.
+- Actual whole-day runs have different random gameplay and machine load, so
+  their timing difference is supporting evidence rather than a controlled
+  whole-village speedup measurement. The paired benchmark above isolates this
+  optimization and checks state equivalence.
+- Movement stayed low at 15.56 ms. AIActionExecutionSystem is now the largest
+  measured remaining system at 2,683.56 ms, followed by Needs/Sleep/Schedule.
+- See How To/AI decision profile.txt for the complete final timing table.
+- The 50-day Program.cs run and a full 400-NPC village were not tested; there is
+  no claim that the AI-only speedup applies to the entire simulation.

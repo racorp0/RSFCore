@@ -1,0 +1,80 @@
+Optional simulation profiling
+
+Run the existing console workflow with:
+  dotnet run --project RSF.Console/RSF.Console.csproj -- --profile
+This keeps the normal Program.cs simulation duration (currently 50 days).
+The flag enables timing and prints one report after the usual debug output.
+It does not shorten the run, optimize systems, alter NPC behavior, or change
+minute-by-minute updates. Normal runs collect no timings and print no report.
+For short experiments, use the existing simulation.Update(minutes) workflow.
+
+The C# API is:
+  simulation.Profiler.Enabled = true;
+  simulation.Update(1440);
+  Console.WriteLine(simulation.Profiler.Dump());
+
+Reset timing after a warm-up with simulation.Profiler.Reset(). Reset does not
+change world state or game time. Disabling pauses collection while preserving
+earlier measurements. Re-enabling accumulates subsequent measured updates.
+
+SimulationProfiler uses Stopwatch.GetTimestamp, a diagnostic real-time clock
+separate from the game's WorldClock. Each system still runs in its existing
+registration order. A try/finally records time even when a system throws;
+the original exception still propagates and later systems do not run.
+When disabled, Simulation.Update follows its ordinary direct call path.
+
+SystemTiming shows per-instance update count, total milliseconds, average per
+update, maximum single-update milliseconds, and share of measured system time.
+Two instances of the same class remain separate rows. Registering the exact
+same instance twice counts both calls in that instance's row. The dictionary
+uses ReferenceEqualityComparer so custom value equality cannot merge instances.
+
+Timings include everything executed inside each Update, including helpers,
+console output, allocation/garbage-collection pauses, and scheduler delays.
+They exclude world setup, blueprint spawning, final debug dumps, and work outside
+system updates. Shares describe measured system time, not CPU-only time or the
+whole application. Other running applications can affect wall-clock results.
+An average/max report is not a detailed allocation or method-level profile.
+The profiler keeps one small entry per measured system instance, not a sample
+for every NPC/minute. It creates no per-minute notifications.
+
+A consistent benchmark should keep build configuration, map/settings, NPC count,
+simulated minutes, output destination, and profiling mode the same. Current
+systems have their existing independent Random instances; identical settings
+do not guarantee identical catches, births, output, or decision paths. This
+feature does not introduce a new random-seeding architecture. Use repeated runs
+when evaluating small performance changes. A 3-NPC baseline cannot establish
+performance for 400 NPCs.
+
+Files changed: Simulation.cs wraps the existing system.Update call; the new
+SimulationProfiler.cs contains diagnostic state/reporting; Program.cs adds an
+optional --profile flag and final report. No gameplay systems were optimized
+or reordered, and the 50-day loop is unchanged.
+
+Validation:
+- 20 focused checks passed for disabled/enabled behavior, update order and call
+  counts, existing whole-minute stepping, reset, disable/resume, timing arithmetic,
+  exception identity, and separate/equal system instances.
+- The ordinary Console build encountered MSB3021/MSB3027 because its output DLL
+  was locked by an existing running Console process. That process was left alone.
+- Building the same Console project into an isolated temporary OutputPath passed
+  with 0 errors. The normal project clean compile retains 20 existing nullable
+  warnings; file-copy retries add warnings only to the locked-output attempts.
+
+Measured baseline (see How To/profiling baseline.txt):
+- 150 x 150 map, three starting residents, 1,440 game minutes.
+- 49.32 seconds wall time; 49.30 seconds accumulated system update time.
+- MovementSystem: 10.14 s (20.6%); AIDecisionSystem: 5.18 s (10.5%);
+  AIActionExecutionSystem: 3.03 s (6.2%). All 20 registered systems measured.
+- This run had another Console process running, so its wall time cannot be used
+  as a direct before/after comparison with the earlier ~30-second run.
+- Source review confirms MovementSystem scans all terrain entities and checks
+  death/sleep/cooking/position before looking for velocity. The first proposed
+  optimization is iterating velocity-bearing entities using the existing World
+  and ComponentStore. No such optimization is implemented in this phase.
+- The one-day spawn/map/update workflow completed successfully. The full 50-day
+  Program run and 400-NPC performance have not been tested.
+
+- 95 existing map/gameplay checks also passed against the isolated build (115
+  checks in total). Changed-file review confirms the 50-day loop and system
+  registration order are unchanged. The baseline report is saved beside this guide.

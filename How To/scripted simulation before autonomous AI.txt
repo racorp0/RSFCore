@@ -1,0 +1,675 @@
+﻿using RSF.Core.Blueprints;
+using RSF.Core.CommandHandlers;
+using RSF.Core.Commands;
+using RSF.Core.Common;
+using RSF.Core.Components;
+using RSF.Core.Debugging;
+using RSF.Core.Entities;
+using RSF.Core.Simulation;
+using RSF.Core.Systems;
+using System.Net.NetworkInformation;
+
+
+
+Simulation simulation = new();
+
+MapBlueprint.Create(simulation.World);
+
+CommandDispatcher dispatcher =
+    new();
+
+TimeSystem timeSystem =
+    new(simulation.Clock);
+
+simulation.AddSystem(
+    timeSystem);
+
+MovementSystem movementSystem =
+    new(simulation.World);
+
+StatSystem statSystem =
+    new(simulation.World);
+
+HungerSystem hungerSystem =
+    new(simulation.World);
+
+simulation.AddSystem(
+    hungerSystem);
+
+ManaRegenerationSystem manaRegenerationSystem =
+    new(
+        simulation.World,
+        simulation.Clock);
+
+simulation.AddSystem(
+    manaRegenerationSystem);
+
+CooldownSystem cooldownSystem =
+    new(
+        simulation.World,
+        simulation.Clock);
+
+simulation.AddSystem(
+    cooldownSystem);
+
+StatusEffectSystem statusEffectSystem =
+    new(
+        simulation.World,
+        simulation.Clock);
+
+simulation.AddSystem(
+    statusEffectSystem);
+
+DeathSystem deathSystem =
+    new(simulation.World);
+
+simulation.AddSystem(
+    deathSystem);
+
+InventorySystem inventorySystem =
+    new(simulation.World);
+
+EquipmentSystem equipmentSystem =
+    new(
+        simulation.World,
+        statSystem);
+
+ItemEffectSystem itemEffectSystem =
+    new(
+        simulation.World,
+        simulation.Clock);
+
+LeaseSystem leaseSystem = new(
+    simulation.World,
+    simulation.Clock);
+
+simulation.AddSystem(
+    leaseSystem);
+
+
+/*dispatch_registry*/
+
+
+UseSkillCommandHandler skillHandler =
+    new(
+        simulation.World,
+        cooldownSystem);
+
+dispatcher.Register(skillHandler);
+
+AttackCommandHandler attackHandler =
+    new(
+        simulation.World,
+        simulation.Clock,
+        cooldownSystem);
+
+dispatcher.Register(attackHandler);
+
+MoveCommandHandler moveHandler =
+    new(
+        simulation.World,
+        movementSystem);
+
+dispatcher.Register(
+    moveHandler);
+
+PickupCommandHandler pickupHandler =
+    new(simulation.World, inventorySystem);
+
+EquipCommandHandler equipHandler =
+    new(
+        simulation.World,
+        inventorySystem,
+        equipmentSystem);
+
+dispatcher.Register(equipHandler);
+
+UnequipCommandHandler unequipHandler =
+    new(
+        equipmentSystem,
+        simulation.World);
+
+dispatcher.Register(unequipHandler);
+
+DropCommandHandler dropHandler =
+    new(
+        inventorySystem,
+        equipmentSystem);
+
+dispatcher.Register(pickupHandler);
+dispatcher.Register(dropHandler);
+
+UseItemCommandHandler useItemHandler =
+    new(
+        simulation.World,
+        inventorySystem,
+        itemEffectSystem);
+
+dispatcher.Register(useItemHandler);
+
+/*spawn*/
+
+HumanBlueprint humanBlueprint = new();
+
+/*farming_setup*/
+
+// Keep the existing lease example above. Start farming at 06:00 to show that
+// growth follows elapsed minutes from planting rather than midnight.
+simulation.Update(6 * GameDate.MinutesPerHour);
+
+Entity minami = humanBlueprint.Spawn(
+    simulation.World,
+    "Minami",
+    0,
+    0);
+
+FarmingSystem farmingSystem = new(
+    simulation.World,
+    simulation.Clock,
+    inventorySystem);
+
+simulation.AddSystem(farmingSystem);
+
+PlowCommandHandler plowHandler = new(farmingSystem);
+PlantRiceCommandHandler plantRiceHandler = new(farmingSystem);
+WaterCommandHandler waterHandler = new(farmingSystem);
+HarvestRiceCommandHandler harvestRiceHandler = new(farmingSystem);
+ThreshRiceCommandHandler threshRiceHandler = new(farmingSystem);
+
+dispatcher.Register(plowHandler);
+dispatcher.Register(plantRiceHandler);
+dispatcher.Register(waterHandler);
+dispatcher.Register(harvestRiceHandler);
+dispatcher.Register(threshRiceHandler);
+
+RiceSeedBlueprint riceSeedBlueprint = new();
+WateringCanBlueprint wateringCanBlueprint = new();
+BreadBlueprint breadBlueprint = new();
+
+Entity riceSeeds = riceSeedBlueprint.Spawn(simulation.World, 3);
+Entity wateringCan = wateringCanBlueprint.Spawn(simulation.World);
+
+dispatcher.Dispatch(new PickupCommand(minami, riceSeeds));
+dispatcher.Dispatch(new PickupCommand(minami, wateringCan));
+
+// One loaf restores 30 hunger. Thirty loaves cover the ten-day demonstration
+// without changing hunger rules or making Minami immune to starvation.
+List<Entity> breadSupply = new();
+
+for (int loaf = 0; loaf < 30; loaf++)
+{
+    Entity bread = breadBlueprint.Spawn(simulation.World);
+    breadSupply.Add(bread);
+    dispatcher.Dispatch(new PickupCommand(minami, bread));
+}
+
+Entity? farmTile = null;
+
+foreach (Entity tile in simulation.World.GetEntities())
+{
+    if (simulation.World.TryGet<MapTileComponent>(tile, out var mapTile) &&
+        mapTile is not null &&
+        mapTile.Zone == MapZone.Farmland)
+    {
+        farmTile = tile;
+        break;
+    }
+}
+
+if (farmTile is null)
+{
+    throw new InvalidOperationException("The map needs a farmland tile for Minami.");
+}
+
+dispatcher.Dispatch(new PlowCommand(minami, farmTile));
+dispatcher.Dispatch(new PlantRiceCommand(minami, farmTile, riceSeeds));
+
+// Planting on an occupied plot must fail without spending another seed.
+dispatcher.Dispatch(new PlantRiceCommand(minami, farmTile, riceSeeds));
+
+// An immature crop must remain on its plot when harvesting is attempted too early.
+dispatcher.Dispatch(new HarvestRiceCommand(minami, farmTile));
+
+Console.WriteLine($"Rice planted at minute {simulation.Clock.CurrentMinute} (06:00).");
+Console.WriteLine(WorldDebugger.DumpEntity(simulation.World, riceSeeds));
+
+GameMinute plantedAt = simulation.Clock.CurrentMinute;
+
+/*farming_simulation*/
+
+int nextBread = 0;
+
+// Eight watered days plus one dry day and its replacement day give ten days.
+for (int day = 1; day <= 10; day++)
+{
+    Console.WriteLine($"=== Farming interval {day} ===");
+
+    // Intentionally skip watering in interval three: growth falls from 2 to 1.
+    if (day != 3)
+    {
+        dispatcher.Dispatch(new WaterCommand(minami, farmTile, wateringCan));
+    }
+
+    if (day == 1)
+    {
+        // A second command must not grant more water or restart the cooldown.
+        dispatcher.Dispatch(new WaterCommand(minami, farmTile, wateringCan));
+    }
+
+    for (int minute = 0; minute < GameDate.MinutesPerDay; minute++)
+    {
+        // Use the normal consumable command before hunger can reach zero.
+        if (simulation.World.TryGet<HungerComponent>(minami, out var hunger) &&
+            hunger.Current <= 30)
+        {
+            if (nextBread >= breadSupply.Count)
+            {
+                throw new InvalidOperationException("Minami has run out of bread.");
+            }
+
+            dispatcher.Dispatch(new UseItemCommand(minami, breadSupply[nextBread]));
+            nextBread++;
+        }
+
+        simulation.Update(1);
+
+        if (day == 1 && minute == GameDate.MinutesPerDay - 2)
+        {
+            // At 1,439 minutes, watering is still too early and growth is still zero.
+            dispatcher.Dispatch(new WaterCommand(minami, farmTile, wateringCan));
+            Console.WriteLine(WorldDebugger.DumpEntity(simulation.World, farmTile));
+
+            if (!simulation.World.TryGet<RiceCropComponent>(farmTile, out var earlyRice) ||
+                earlyRice.GrowthDays != 0 ||
+                !simulation.World.TryGet<FarmPlotComponent>(farmTile, out var earlyPlot) ||
+                earlyPlot.LastWateredAt != plantedAt)
+            {
+                throw new InvalidOperationException("Growth or watering happened before a full day elapsed.");
+            }
+        }
+    }
+
+    // The dry third interval loses one day; subsequent watering recovers it.
+    int expectedGrowth = day < 3 ? day : day - 2;
+
+    if (!simulation.World.TryGet<RiceCropComponent>(farmTile, out var dailyRice) ||
+        dailyRice.GrowthDays != expectedGrowth ||
+        dailyRice.WasWatered ||
+        dailyRice.LastGrowthAt != plantedAt.Add((long)day * GameDate.MinutesPerDay))
+    {
+        throw new InvalidOperationException($"Unexpected rice growth in interval {day}.");
+    }
+
+    Console.WriteLine($"Elapsed farming minutes: {day * GameDate.MinutesPerDay}");
+    Console.WriteLine(WorldDebugger.DumpEntity(simulation.World, farmTile));
+}
+
+// These checks make a broken demonstration fail visibly instead of reporting success.
+if (!simulation.World.TryGet<RiceCropComponent>(farmTile, out var finalRice) ||
+    !finalRice.IsMature ||
+    !simulation.World.TryGet<RiceSeedComponent>(riceSeeds, out var remainingSeeds) ||
+    remainingSeeds.Quantity != 2 ||
+    simulation.World.Has<DeadComponent>(minami) ||
+    !simulation.World.TryGet<HealthComponent>(minami, out var minamiHealth) ||
+    minamiHealth.Current != minamiHealth.Max)
+{
+    throw new InvalidOperationException("Farming demonstration did not finish as expected.");
+}
+
+Console.WriteLine($"Farming complete: rice mature, seeds remaining: {remainingSeeds.Quantity}.");
+Console.WriteLine($"Minami ate {nextBread} loaves and kept full health.");
+Console.WriteLine(WorldDebugger.DumpEntity(simulation.World, minami));
+
+/*harvest_and_thresh*/
+
+dispatcher.Dispatch(new HarvestRiceCommand(minami, farmTile));
+
+if (simulation.World.Has<RiceCropComponent>(farmTile) ||
+    !simulation.World.Has<FarmPlotComponent>(farmTile))
+{
+    throw new InvalidOperationException("Harvesting must remove the crop but preserve the farm plot.");
+}
+
+if (!simulation.World.TryGet<InventoryComponent>(minami, out var minamiInventory) ||
+    minamiInventory is null)
+{
+    throw new InvalidOperationException("Minami needs an inventory for the harvest.");
+}
+
+Entity? harvestedPlant = null;
+
+foreach (Entity item in minamiInventory.Items)
+{
+    if (simulation.World.Has<HarvestedRiceComponent>(item))
+    {
+        harvestedPlant = item;
+        break;
+    }
+}
+
+if (harvestedPlant is null)
+{
+    throw new InvalidOperationException("Harvesting did not add a rice plant to inventory.");
+}
+
+Console.WriteLine("=== Minami's inventory after harvesting ===");
+Console.WriteLine(WorldDebugger.DumpEntity(simulation.World, minami));
+
+// Repeating harvest or thresh must never produce duplicate items.
+dispatcher.Dispatch(new HarvestRiceCommand(minami, farmTile));
+dispatcher.Dispatch(new ThreshRiceCommand(minami, harvestedPlant));
+dispatcher.Dispatch(new ThreshRiceCommand(minami, harvestedPlant));
+
+int totalGrains = 0;
+
+foreach (Entity item in minamiInventory.Items)
+{
+    if (simulation.World.TryGet<RiceGrainComponent>(item, out var grain))
+    {
+        totalGrains += grain.Quantity;
+    }
+
+    if (simulation.World.Has<HarvestedRiceComponent>(item))
+    {
+        throw new InvalidOperationException("Threshing must consume the harvested plant.");
+    }
+}
+
+if (totalGrains != 20 ||
+    inventorySystem.HasItem(minami, harvestedPlant) ||
+    simulation.World.TryGetEntity(harvestedPlant.Id, out _))
+{
+    throw new InvalidOperationException("One harvested rice plant must produce exactly 20 grains once.");
+}
+
+Console.WriteLine($"Harvest and thresh complete: Minami has {totalGrains} Rice Grain.");
+Console.WriteLine(WorldDebugger.DumpEntity(simulation.World, minami));
+
+// The existing plot can start a new crop without plowing again.
+dispatcher.Dispatch(new PlantRiceCommand(minami, farmTile, riceSeeds));
+
+if (!simulation.World.Has<RiceCropComponent>(farmTile) ||
+    !simulation.World.TryGet<RiceSeedComponent>(riceSeeds, out var seedsAfterReplanting) ||
+    seedsAfterReplanting.Quantity != 1)
+{
+    throw new InvalidOperationException("The harvested plot should accept another rice seed.");
+}
+
+Console.WriteLine("Minami replanted the farm plot; one rice seed remains.");
+
+/*fishing_setup*/
+
+Entity river = new RiverBlueprint().Spawn(simulation.World, "Village River", 9, 5);
+Entity haruto = humanBlueprint.Spawn(simulation.World, "Haruto", 9, 4);
+simulation.World.Add(haruto, new FishingSkillComponent(1));
+
+Entity fishingRod = new FishingRodBlueprint().Spawn(simulation.World);
+Entity fishingBait = new BaitBlueprint().Spawn(simulation.World, 5);
+dispatcher.Dispatch(new PickupCommand(haruto, fishingRod));
+dispatcher.Dispatch(new PickupCommand(haruto, fishingBait));
+
+List<Entity> fisherBread = new();
+for (int loaf = 0; loaf < 5; loaf++)
+{
+    Entity bread = breadBlueprint.Spawn(simulation.World);
+    fisherBread.Add(bread);
+    dispatcher.Dispatch(new PickupCommand(haruto, bread));
+}
+
+FishingSystem fishingSystem = new(simulation.World, simulation.Clock, inventorySystem);
+simulation.AddSystem(fishingSystem);
+StartFishingCommandHandler startFishingHandler = new(fishingSystem);
+dispatcher.Register(startFishingHandler);
+
+Console.WriteLine(WorldDebugger.DumpEntity(simulation.World, river));
+int nextFisherBread = 0;
+
+// Every attempt has a random wait and outcome; an unsuccessful catch is a valid result.
+for (int attemptNumber = 1; attemptNumber <= 5; attemptNumber++)
+{
+    Console.WriteLine($"=== Haruto fishing attempt {attemptNumber} ===");
+    dispatcher.Dispatch(new StartFishingCommand(haruto, river, fishingRod, fishingBait));
+
+    if (!simulation.World.TryGet<FishingAttemptComponent>(haruto, out var fishingAttempt) ||
+        fishingAttempt.Duration.Minutes < 5 || fishingAttempt.Duration.Minutes > 360)
+    {
+        throw new InvalidOperationException("Fishing should start with a wait of 5 to 360 minutes.");
+    }
+
+    // A duplicate start must not consume more bait or replace the active attempt.
+    dispatcher.Dispatch(new StartFishingCommand(haruto, river, fishingRod, fishingBait));
+
+    for (int minute = 0; minute < fishingAttempt.Duration.Minutes; minute++)
+    {
+        // Both NPCs remain in the same world, so keep feeding Minami as well as Haruto.
+        if (simulation.World.TryGet<HungerComponent>(minami, out var farmerHunger) && farmerHunger.Current <= 30)
+        {
+            dispatcher.Dispatch(new UseItemCommand(minami, breadSupply[nextBread++]));
+        }
+        if (simulation.World.TryGet<HungerComponent>(haruto, out var fisherHunger) && fisherHunger.Current <= 30)
+        {
+            dispatcher.Dispatch(new UseItemCommand(haruto, fisherBread[nextFisherBread++]));
+        }
+
+        simulation.Update(1);
+
+        if (minute < fishingAttempt.Duration.Minutes - 1 &&
+            !simulation.World.Has<FishingAttemptComponent>(haruto))
+        {
+            throw new InvalidOperationException("Fishing finished before its selected wait elapsed.");
+        }
+    }
+
+    if (simulation.World.Has<FishingAttemptComponent>(haruto) ||
+        !simulation.World.TryGet<BaitComponent>(fishingBait, out var baitLeft) ||
+        baitLeft.Quantity != 5 - attemptNumber)
+    {
+        throw new InvalidOperationException("Each completed attempt must spend exactly one bait.");
+    }
+}
+
+// Empty bait cannot be reused after the last attempt.
+dispatcher.Dispatch(new StartFishingCommand(haruto, river, fishingRod, fishingBait));
+if (simulation.World.Has<FishingAttemptComponent>(haruto) ||
+    inventorySystem.HasItem(haruto, fishingBait) ||
+    simulation.World.Has<DeadComponent>(haruto) || simulation.World.Has<DeadComponent>(minami))
+{
+    throw new InvalidOperationException("Fishing should finish with no bait and both NPCs alive.");
+}
+
+Console.WriteLine("Fishing complete: five attempts, zero bait remaining, both NPCs alive.");
+Console.WriteLine(WorldDebugger.DumpEntity(simulation.World, haruto));
+
+/*gold_and_trading*/
+
+// Earlier sections retain their original food supplies to verify farming and fishing.
+// This stage starts the economy: workers now buy bread from the future cook, Aoi.
+Entity aoi = humanBlueprint.Spawn(simulation.World, "Aoi", 6, 3);
+TradeSystem tradeSystem = new(simulation.World, inventorySystem);
+BuyItemCommandHandler buyItemHandler = new(tradeSystem);
+dispatcher.Register(buyItemHandler);
+
+const int breadPrice = 5;
+const int grainPrice = 1;
+const int fishPrice = 10;
+List<Entity> shopBread = new();
+
+// Put the unused demo supplies in the cook's opening stock instead of discarding them.
+foreach (Entity worker in new[] { minami, haruto })
+{
+    if (!simulation.World.TryGet<InventoryComponent>(worker, out var workerInventory) || workerInventory is null)
+    {
+        throw new InvalidOperationException("Each worker needs an inventory for trading.");
+    }
+
+    foreach (Entity item in workerInventory.Items.ToList())
+    {
+        if (simulation.World.TryGet<ItemComponent>(item, out var food) && food.Name == "Bread")
+        {
+            inventorySystem.RemoveItem(worker, item);
+            inventorySystem.AddItem(aoi, item);
+            simulation.World.Add(item, new TradePriceComponent(breadPrice));
+            shopBread.Add(item);
+        }
+    }
+}
+
+// The cook also starts with a few loaves. Recipes and cooking will supply later stock.
+for (int loaf = 0; loaf < 5; loaf++)
+{
+    Entity bread = breadBlueprint.Spawn(simulation.World);
+    inventorySystem.AddItem(aoi, bread);
+    simulation.World.Add(bread, new TradePriceComponent(breadPrice));
+    shopBread.Add(bread);
+}
+
+dispatcher.Dispatch(new BuyItemCommand(minami, aoi, shopBread[0]));
+dispatcher.Dispatch(new BuyItemCommand(haruto, aoi, shopBread[1]));
+
+if (!inventorySystem.HasItem(minami, shopBread[0]) || !inventorySystem.HasItem(haruto, shopBread[1]))
+{
+    throw new InvalidOperationException("Workers must buy their bread before eating it.");
+}
+
+dispatcher.Dispatch(new UseItemCommand(minami, shopBread[0]));
+dispatcher.Dispatch(new UseItemCommand(haruto, shopBread[1]));
+
+Entity grainForSale = minamiInventory.Items.First(item => simulation.World.Has<RiceGrainComponent>(item));
+simulation.World.Add(grainForSale, new TradePriceComponent(grainPrice));
+
+// Buying five grains splits the stack: Minami keeps fifteen and Aoi receives five.
+dispatcher.Dispatch(new BuyItemCommand(aoi, minami, grainForSale, 5));
+if (!simulation.World.TryGet<RiceGrainComponent>(grainForSale, out var grainRemaining) || grainRemaining.Quantity != 15)
+{
+    throw new InvalidOperationException("A partial purchase must leave the remaining grain with the seller.");
+}
+
+// Buying the remainder transfers the original item, preserving its existing entity identity.
+dispatcher.Dispatch(new BuyItemCommand(aoi, minami, grainForSale, 15));
+
+if (!simulation.World.TryGet<InventoryComponent>(haruto, out var harutoInventory) || harutoInventory is null ||
+    !simulation.World.TryGet<InventoryComponent>(aoi, out var aoiInventory) || aoiInventory is null)
+{
+    throw new InvalidOperationException("Trading NPCs need inventories.");
+}
+
+// A random fishing run can catch nothing; the cook buys only the fish actually available.
+foreach (Entity fish in harutoInventory.Items.ToList())
+{
+    if (simulation.World.Has<FishComponent>(fish))
+    {
+        simulation.World.Add(fish, new TradePriceComponent(fishPrice));
+        dispatcher.Dispatch(new BuyItemCommand(aoi, haruto, fish));
+    }
+}
+
+int cookGrains = 0;
+foreach (Entity item in aoiInventory.Items)
+{
+    if (simulation.World.TryGet<RiceGrainComponent>(item, out var stock))
+    {
+        cookGrains += stock.Quantity;
+    }
+}
+
+simulation.World.TryGet<GoldComponent>(minami, out var farmerGold);
+simulation.World.TryGet<GoldComponent>(haruto, out var fisherGold);
+simulation.World.TryGet<GoldComponent>(aoi, out var cookGold);
+if (cookGrains != 20 || inventorySystem.HasItem(minami, grainForSale) ||
+    farmerGold.Amount + fisherGold.Amount + cookGold.Amount != 300)
+{
+    throw new InvalidOperationException("Trading must preserve the grain quantity and total gold.");
+}
+
+Console.WriteLine("Trading complete: workers bought bread; Aoi bought ingredients; total gold remains 300.");
+Console.WriteLine(WorldDebugger.DumpEntity(simulation.World, minami));
+Console.WriteLine(WorldDebugger.DumpEntity(simulation.World, haruto));
+Console.WriteLine(WorldDebugger.DumpEntity(simulation.World, aoi));
+
+/*needs_and_survival_ai*/
+
+// Settings are assigned in the demonstration, not hidden in decision-system conditions.
+// Different NPCs can share these immutable settings or use a copy with different values.
+NeedsSettingsComponent survivalNeeds = new()
+{
+    CriticalHealthPercent = 25,
+    HealthyPercent = 60,
+    UrgentHungerPercent = 30,
+    SatisfiedHungerPercent = 60
+};
+
+AISettingsComponent survivalAI = new()
+{
+    HealingPoints = 1000,
+    EatingPoints = 500,
+    HealthSeverityWeight = 2,
+    HungerSeverityWeight = 2,
+    ContinuationBonus = 25,
+    SwitchMargin = 20,
+    PurchaseCostWeight = 1,
+    DecisionInterval = GameDuration.FromMinutes(5),
+    ActionInterval = GameDuration.FromMinutes(1),
+    RetryDelay = GameDuration.FromMinutes(15)
+};
+
+simulation.World.Add(minami, survivalNeeds);
+simulation.World.Add(minami, survivalAI);
+simulation.World.Add(haruto, survivalNeeds);
+simulation.World.Add(haruto, survivalAI with { EatingPoints = 650 });
+
+// Give Minami critical HP and hunger together, plus an existing instant-healing item.
+simulation.World.TryGet<HealthComponent>(minami, out var beforeAIHealth);
+simulation.World.Add(minami, new HealthComponent(Math.Max(1, beforeAIHealth.Max / 10), beforeAIHealth.Max));
+simulation.World.Add(minami, new HungerComponent(20, 100));
+Entity healingPotion = simulation.World.CreateEntity();
+simulation.World.Add(healingPotion, new ItemComponent("Healing Potion"));
+simulation.World.Add(healingPotion, new ConsumableItemComponent());
+simulation.World.Add(healingPotion, new RestoreHealthEffectComponent(beforeAIHealth.Max));
+inventorySystem.AddItem(minami, healingPotion);
+
+// Haruto's empty wallet demonstrates blocked needs without repeatedly issuing failed purchases.
+simulation.World.TryGet<GoldComponent>(haruto, out var harutoSavings);
+simulation.World.Add(haruto, new GoldComponent(0));
+simulation.World.Add(haruto, new HungerComponent(20, 100));
+
+NeedsSystem needsSystem = new(simulation.World);
+AIDecisionSystem aiDecisionSystem = new(simulation.World, simulation.Clock);
+AIActionExecutionSystem aiExecutionSystem = new(simulation.World, simulation.Clock, dispatcher);
+simulation.AddSystem(needsSystem);
+simulation.AddSystem(aiDecisionSystem);
+simulation.AddSystem(aiExecutionSystem);
+
+simulation.Update(1);
+
+if (!simulation.World.TryGet<HealthComponent>(minami, out var healedMinami) ||
+    healedMinami.Current != healedMinami.Max || inventorySystem.HasItem(minami, healingPotion) ||
+    !simulation.World.TryGet<HungerComponent>(minami, out var stillHungry) || stillHungry.Current > 20)
+{
+    throw new InvalidOperationException("Critical HP must be addressed before hunger.");
+}
+
+Console.WriteLine("AI: Minami healed first while hunger remained urgent.");
+simulation.Update(4);
+
+if (!simulation.World.TryGet<HungerComponent>(minami, out var fedMinami) || fedMinami.Current < 60 ||
+    !simulation.World.TryGet<AIStateComponent>(haruto, out var blockedHaruto) || blockedHaruto is null ||
+    blockedHaruto.Activity != AIActivity.Wait)
+{
+    throw new InvalidOperationException("AI must feed Minami and wait when Haruto cannot afford food.");
+}
+
+Console.WriteLine("AI: Minami bought and ate food; Haruto is waiting for resources.");
+
+// Restore savings to simulate a later resource change. Retry timing remains configurable.
+simulation.World.Add(haruto, harutoSavings);
+simulation.Update(15);
+
+if (!simulation.World.TryGet<HungerComponent>(haruto, out var fedHaruto) || fedHaruto.Current < 60)
+{
+    throw new InvalidOperationException("Haruto should retry and obtain food after his gold becomes available.");
+}
+
+Console.WriteLine("AI complete: healing priority, food purchases, and delayed resource retry verified.");
+Console.WriteLine(WorldDebugger.DumpEntity(simulation.World, minami));
+Console.WriteLine(WorldDebugger.DumpEntity(simulation.World, haruto));
+

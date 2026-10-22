@@ -1,0 +1,178 @@
+using RSF.Core.Blueprints;
+using RSF.Core.CommandHandlers;
+using RSF.Core.Commands;
+using RSF.Core.Common;
+using RSF.Core.Components;
+using RSF.Core.Debugging;
+using RSF.Core.Entities;
+using RSF.Core.Simulation;
+using RSF.Core.Systems;
+using System.Net.NetworkInformation;
+
+
+
+Simulation simulation = new();
+
+CommandDispatcher dispatcher =
+    new();
+
+TimeSystem timeSystem =
+    new(simulation.Clock);
+
+simulation.AddSystem(
+    timeSystem);
+
+MovementSystem movementSystem =
+    new(simulation.World);
+
+/*dispatch_registry*/
+
+StatSystem statSystem =
+    new(simulation.World);
+
+HungerSystem hungerSystem =
+    new(simulation.World);
+
+simulation.AddSystem(
+    hungerSystem);
+
+ManaRegenerationSystem manaRegenerationSystem =
+    new(
+        simulation.World,
+        simulation.Clock);
+
+simulation.AddSystem(
+    manaRegenerationSystem);
+
+CooldownSystem cooldownSystem =
+    new(
+        simulation.World,
+        simulation.Clock);
+
+simulation.AddSystem(
+    cooldownSystem);
+
+UseSkillCommandHandler skillHandler =
+    new(
+        simulation.World,
+        cooldownSystem);
+
+dispatcher.Register(skillHandler);
+
+AttackCommandHandler attackHandler =
+    new(
+        simulation.World,
+        simulation.Clock,
+        cooldownSystem);
+
+dispatcher.Register(attackHandler);
+
+MoveCommandHandler moveHandler =
+    new(
+        simulation.World,
+        movementSystem);
+
+dispatcher.Register(
+    moveHandler);
+
+StatusEffectSystem statusEffectSystem =
+    new(
+        simulation.World,
+        simulation.Clock);
+
+simulation.AddSystem(
+    statusEffectSystem);
+
+DeathSystem deathSystem =
+    new(simulation.World);
+
+simulation.AddSystem(
+    deathSystem);
+
+InventorySystem inventorySystem =
+    new(simulation.World);
+
+PickupCommandHandler pickupHandler =
+    new(simulation.World, inventorySystem);
+
+EquipmentSystem equipmentSystem =
+    new(
+        simulation.World,
+        statSystem);
+
+EquipCommandHandler equipHandler =
+    new(
+        simulation.World,
+        inventorySystem,
+        equipmentSystem);
+
+dispatcher.Register(equipHandler);
+
+UnequipCommandHandler unequipHandler =
+    new(
+        equipmentSystem,
+        simulation.World);
+
+dispatcher.Register(unequipHandler);
+
+DropCommandHandler dropHandler =
+    new(
+        inventorySystem,
+        equipmentSystem);
+
+dispatcher.Register(pickupHandler);
+dispatcher.Register(dropHandler);
+
+
+ItemEffectSystem itemEffectSystem =
+    new(
+        simulation.World,
+        simulation.Clock);
+
+UseItemCommandHandler useItemHandler =
+    new(
+        simulation.World,
+        inventorySystem,
+        itemEffectSystem);
+
+dispatcher.Register(useItemHandler);
+
+/*spawn*/
+
+HumanBlueprint humanBlueprint = new();
+
+Entity player = humanBlueprint.Spawn(
+    simulation.World,
+    "Arthas",
+    0,
+    0);
+
+Entity npc1 = humanBlueprint.Spawn(
+    simulation.World,
+    "Goblin Slayer",
+    5,
+    3);
+
+/*dispatch_action*/
+
+Console.WriteLine(
+    WorldDebugger.DumpEntity(
+        simulation.World,
+        player));
+
+Console.WriteLine(
+    WorldDebugger.DumpEntity(
+        simulation.World,
+        npc1));
+
+simulation.Update(40.0f);
+
+Console.WriteLine(
+    WorldDebugger.DumpEntity(
+        simulation.World,
+        player));
+
+Console.WriteLine(
+    WorldDebugger.DumpEntity(
+        simulation.World,
+        npc1));

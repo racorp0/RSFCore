@@ -1,0 +1,54 @@
+FarmingSystem performance
+
+FarmingSystem.Update now selects GetEntitiesWith<PlantCropComponent>() instead
+of scanning every world entity. The existing ComponentStore index skips empty
+plots, roads, buildings, and other entities without crops. No cache or new
+system was added. Program.cs, JSON settings, and registration are unchanged.
+
+The existing UpdatePlant method replaces the value of a crop already in the
+index; it does not add/remove indexed entries. Updating an existing dictionary
+value during enumeration is supported by this project's .NET runtime. Thus
+the live query needs no list copy here. If future growth logic removes crops
+or creates new ones during Update, copy the query before iterating instead.
+Planting, clearing, and harvesting occur through their existing action paths
+outside this growth enumeration. Between-update membership changes are picked
+up automatically.
+
+All farming actions and growth calculations are unchanged. JSON-defined initial
+growth/regrowth, elapsed-minute watering cooldowns, missed-watering progress
+loss, maturity, randomized harvest lifespans/output quantities, seed spending,
+worm rewards, ownership, and re-plowing remain on their existing paths.
+Crop iteration order is not guaranteed, but growth updates only the current
+crop and do not use random rolls or compete for resources.
+
+Validation:
+- A temporary simulation workflow passed each current JSON crop: rice, cabbage,
+  and tomato. It exercised plowing, planting, duplicate watering rejection,
+  just-before/exact growth boundaries, missed-watering progress loss, harvest
+  once-only behavior, tomato regrowth/drying/clearing, and re-plow/replant.
+- Existing 95 map/gameplay, 27 survival AI, and 20 profiler checks passed.
+- Source comparison confirmed all farming actions and growth calculations
+  unchanged; the diff contains only the query and its documentation.
+- Console build passed with 0 errors and 20 existing nullable warnings on initial
+  compilation. Output used a temporary folder; no running app was stopped.
+  No production tests were deleted or new test framework added.
+
+Controlled Debug benchmark: 22,500 empty terrain entities plus crop entities,
+480 updates, three alternating original/updated pairs after warm-up. Clock time
+stayed fixed before growth was due, retaining existing crop-data replacements.
+Median milliseconds:
+  9 crops: original 580.983; updated 1.742.
+  400 crops: original 666.550; updated 63.456 (about 10.5 times faster).
+The original source was copied before editing for comparison. These timings
+measure crop-update overhead, not complete 400-NPC gameplay or harvesting.
+
+One-day village profile: 150x150 map, 3 residents, 1,440 game minutes.
+  Previous run: wall 13,541.64 ms; FarmingSystem 2,234.70 ms.
+  Current run: wall 9,263.54 ms; FarmingSystem 13.36 ms.
+Separate full-day samples include random gameplay and runtime variation; the
+entire wall-time difference cannot be attributed solely to this change. The
+short village profile does not cover full crop lifecycles; the focused workflow
+above covers those separately. FishingSystem now leads at 1,759.94 ms and remains
+future work.
+
+Files changed: FarmingSystem.cs, this guide, and Farming profile.txt.

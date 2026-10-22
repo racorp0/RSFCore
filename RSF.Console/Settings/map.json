@@ -1,0 +1,89 @@
+// Standard 12 x 9 building and farm parcels. Floors are metadata; interiors and shared occupancy come later.
+{
+  "width": 150,
+  "height": 150,
+  "metresPerTile": 1,
+  "plotWidth": 12,
+  "plotHeight": 9,
+  "entranceY": 10,
+  "marketX": 16,
+  "marketY": 8,
+  "plots": [
+    {
+      "id": "village_inn",
+      "name": "Village Inn",
+      "kind": "Inn",
+      "x": 22,
+      "y": 8,
+      "entranceX": 22,
+      "entranceY": 8,
+      "floors": 2
+    },
+    {
+      "id": "blacksmith_workshop",
+      "name": "Available Blacksmith Workshop",
+      "kind": "Workshop",
+      "x": 38,
+      "y": 8,
+      "entranceX": 38,
+      "entranceY": 8,
+      "floors": 1
+    },
+    {
+      "id": "house_1",
+      "name": "Available House 1",
+      "kind": "House",
+      "x": 18,
+      "y": 22,
+      "entranceX": 18,
+      "entranceY": 22,
+      "floors": 1
+    },
+    {
+      "id": "house_2",
+      "name": "Available House 2",
+      "kind": "House",
+      "x": 32,
+      "y": 22,
+      "entranceX": 32,
+      "entranceY": 22,
+      "floors": 1
+    },
+    {
+      "id": "house_3",
+      "name": "Available House 3",
+      "kind": "House",
+      "x": 46,
+      "y": 22,
+      "entranceX": 46,
+      "entranceY": 22,
+      "floors": 1
+    },
+    {
+      "id": "house_4",
+      "name": "Available House 4",
+      "kind": "House",
+      "x": 60,
+      "y": 22,
+      "entranceX": 60,
+      "entranceY": 22,
+      "floors": 1
+    },
+    {
+      "id": "farm_1",
+      "name": "Farm Parcel 1",
+      "kind": "Farm",
+      "x": 2,
+      "y": 2,
+      "floors": 1
+    },
+    {
+      "id": "farm_2",
+      "name": "Farm Parcel 2",
+      "kind": "Farm",
+      "x": 2,
+      "y": 22,
+      "floors": 1
+    }
+  ]
+}

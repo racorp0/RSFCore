@@ -1,0 +1,412 @@
+// Species meat Item quantities are grams. Each fish meal below uses 200 g of one complete meat alternative.
+// Phase 1: shared-style inputs, held tools, kitchen, duration, skill requirement, and weighted Meal output groups. Existing quality rolls are unchanged.
+{
+  "mealStockTarget": 6,
+  "mealPrice": 8,
+  "spiceStockTarget": 10,
+  "poorChancePercent": 25,
+  "goodChancePercent": 25,
+  "poorMultiplier": 0.75,
+  "goodMultiplier": 1.25,
+  "cookingPoints": 250,
+  "recipes": [
+    {
+      "id": "seasoned_rice",
+      "name": "Seasoned Rice",
+      "inputs": [
+        {
+          "options": [
+            {
+              "kind": "Item",
+              "itemId": "rice_grain",
+              "quantity": 5
+            }
+          ]
+        }
+      ],
+      "tools": [
+        "cooking_utensils"
+      ],
+      "processingStation": "kitchen",
+      "processingMinutes": 30,
+      "requiresOperator": true,
+      "requiredSkill": {
+        "id": "cooking",
+        "minimumLevel": 1
+      },
+      "outputs": [
+        {
+          "options": [
+            {
+              "kind": "Meal",
+              "itemId": "seasoned_rice",
+              "name": "Seasoned Rice",
+              "chancePercent": 100,
+              "minimumQuantity": 2,
+              "maximumQuantity": 2,
+              "hunger": 20,
+              "health": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fish_stew",
+      "name": "Fish Stew",
+      "inputs": [
+        {
+          "options": [
+            { "kind": "Item", "itemId": "carp_meat", "quantity": 200 },
+{ "kind": "Item", "itemId": "catfish_meat", "quantity": 200 },
+{ "kind": "Item", "itemId": "tilapia_meat", "quantity": 200 },
+{ "kind": "Item", "itemId": "perch_meat", "quantity": 200 },
+{ "kind": "Item", "itemId": "pike_meat", "quantity": 200 },
+{ "kind": "Item", "itemId": "mackerel_meat", "quantity": 200 },
+{ "kind": "Item", "itemId": "sardine_meat", "quantity": 200 },
+{ "kind": "Item", "itemId": "tuna_meat", "quantity": 200 }
+          ]
+        },
+        {
+          "options": [
+            {
+              "kind": "Spice",
+              "quantity": 1
+            }
+          ]
+        }
+      ],
+      "tools": [
+        "cooking_utensils"
+      ],
+      "processingStation": "kitchen",
+      "processingMinutes": 40,
+      "requiresOperator": true,
+      "requiredSkill": {
+        "id": "cooking",
+        "minimumLevel": 1
+      },
+      "outputs": [
+        {
+          "options": [
+            {
+              "kind": "Meal",
+              "itemId": "fish_stew",
+              "name": "Fish Stew",
+              "chancePercent": 100,
+              "minimumQuantity": 1,
+              "maximumQuantity": 1,
+              "hunger": 45,
+              "health": 5
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fish_rice",
+      "name": "Fish Rice",
+      "inputs": [
+        {
+          "options": [
+            {
+              "kind": "Item",
+              "itemId": "rice_grain",
+              "quantity": 5
+            }
+          ]
+        },
+        {
+          "options": [
+            { "kind": "Item", "itemId": "carp_meat", "quantity": 200 },
+{ "kind": "Item", "itemId": "catfish_meat", "quantity": 200 },
+{ "kind": "Item", "itemId": "tilapia_meat", "quantity": 200 },
+{ "kind": "Item", "itemId": "perch_meat", "quantity": 200 },
+{ "kind": "Item", "itemId": "pike_meat", "quantity": 200 },
+{ "kind": "Item", "itemId": "mackerel_meat", "quantity": 200 },
+{ "kind": "Item", "itemId": "sardine_meat", "quantity": 200 },
+{ "kind": "Item", "itemId": "tuna_meat", "quantity": 200 }
+          ]
+        },
+        {
+          "options": [
+            {
+              "kind": "Spice",
+              "quantity": 1
+            }
+          ]
+        }
+      ],
+      "tools": [
+        "cooking_utensils"
+      ],
+      "processingStation": "kitchen",
+      "processingMinutes": 60,
+      "requiresOperator": true,
+      "requiredSkill": {
+        "id": "cooking",
+        "minimumLevel": 1
+      },
+      "outputs": [
+        {
+          "options": [
+            {
+              "kind": "Meal",
+              "itemId": "fish_rice",
+              "name": "Fish Rice",
+              "chancePercent": 100,
+              "minimumQuantity": 1,
+              "maximumQuantity": 1,
+              "hunger": 65,
+              "health": 10
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cabbage_soup",
+      "name": "Cabbage Soup",
+      "inputs": [
+        {
+          "options": [
+            {
+              "kind": "Item",
+              "itemId": "cabbage",
+              "quantity": 1
+            }
+          ]
+        },
+        {
+          "options": [
+            {
+              "kind": "Spice",
+              "quantity": 1
+            }
+          ]
+        }
+      ],
+      "tools": [
+        "cooking_utensils"
+      ],
+      "processingStation": "kitchen",
+      "processingMinutes": 30,
+      "requiresOperator": true,
+      "requiredSkill": {
+        "id": "cooking",
+        "minimumLevel": 1
+      },
+      "outputs": [
+        {
+          "options": [
+            {
+              "kind": "Meal",
+              "itemId": "cabbage_soup",
+              "name": "Cabbage Soup",
+              "chancePercent": 100,
+              "minimumQuantity": 2,
+              "maximumQuantity": 2,
+              "hunger": 40,
+              "health": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tomato_soup",
+      "name": "Tomato Soup",
+      "inputs": [
+        {
+          "options": [
+            {
+              "kind": "Item",
+              "itemId": "tomato",
+              "quantity": 2
+            }
+          ]
+        },
+        {
+          "options": [
+            {
+              "kind": "Spice",
+              "quantity": 1
+            }
+          ]
+        }
+      ],
+      "tools": [
+        "cooking_utensils"
+      ],
+      "processingStation": "kitchen",
+      "processingMinutes": 30,
+      "requiresOperator": true,
+      "requiredSkill": {
+        "id": "cooking",
+        "minimumLevel": 1
+      },
+      "outputs": [
+        {
+          "options": [
+            {
+              "kind": "Meal",
+              "itemId": "tomato_soup",
+              "name": "Tomato Soup",
+              "chancePercent": 100,
+              "minimumQuantity": 2,
+              "maximumQuantity": 2,
+              "hunger": 10,
+              "health": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "grilled_fish",
+      "name": "Grilled Fish",
+      "inputs": [
+        {
+          "options": [
+            {
+              "kind": "Item",
+              "itemId": "carp_meat",
+              "quantity": 200
+            },
+            {
+              "kind": "Item",
+              "itemId": "catfish_meat",
+              "quantity": 200
+            },
+            {
+              "kind": "Item",
+              "itemId": "tilapia_meat",
+              "quantity": 200
+            },
+            {
+              "kind": "Item",
+              "itemId": "perch_meat",
+              "quantity": 200
+            },
+            {
+              "kind": "Item",
+              "itemId": "pike_meat",
+              "quantity": 200
+            },
+            {
+              "kind": "Item",
+              "itemId": "mackerel_meat",
+              "quantity": 200
+            },
+            {
+              "kind": "Item",
+              "itemId": "sardine_meat",
+              "quantity": 200
+            },
+            {
+              "kind": "Item",
+              "itemId": "tuna_meat",
+              "quantity": 200
+            }
+          ]
+        }
+      ],
+      "tools": null,
+      "processingStation": "campfire",
+      "processingMinutes": 15,
+      "requiresOperator": true,
+      "requiredSkill": null,
+      "outputs": [
+        {
+          "options": [
+            {
+              "kind": "Meal",
+              "itemId": "grilled_fish",
+              "name": "Grilled Fish",
+              "chancePercent": 100,
+              "minimumQuantity": 1,
+              "maximumQuantity": 1,
+              "hunger": 35,
+              "health": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "smoked_fish",
+      "name": "Smoked Fish",
+      "inputs": [
+        {
+          "options": [
+            {
+              "kind": "Item",
+              "itemId": "carp_meat",
+              "quantity": 200
+            },
+            {
+              "kind": "Item",
+              "itemId": "catfish_meat",
+              "quantity": 200
+            },
+            {
+              "kind": "Item",
+              "itemId": "tilapia_meat",
+              "quantity": 200
+            },
+            {
+              "kind": "Item",
+              "itemId": "perch_meat",
+              "quantity": 200
+            },
+            {
+              "kind": "Item",
+              "itemId": "pike_meat",
+              "quantity": 200
+            },
+            {
+              "kind": "Item",
+              "itemId": "mackerel_meat",
+              "quantity": 200
+            },
+            {
+              "kind": "Item",
+              "itemId": "sardine_meat",
+              "quantity": 200
+            },
+            {
+              "kind": "Item",
+              "itemId": "tuna_meat",
+              "quantity": 200
+            }
+          ]
+        }
+      ],
+      "tools": null,
+      "processingStation": "campfire",
+      "processingMinutes": 120,
+      "requiresOperator": true,
+      "requiredSkill": null,
+      "outputs": [
+        {
+          "options": [
+            {
+              "kind": "Meal",
+              "itemId": "smoked_fish",
+              "name": "Smoked Fish",
+              "chancePercent": 100,
+              "minimumQuantity": 1,
+              "maximumQuantity": 1,
+              "hunger": 35,
+              "health": 0,
+              "shelfLifeMinutes": 64800
+            }
+          ]
+        }
+      ],
+      "preservesFood": true
+    }
+  ],
+  "kitchenStationType": "kitchen",
+  "utensilToolId": "cooking_utensils"
+}

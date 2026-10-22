@@ -1,0 +1,94 @@
+Current map update: map.json defines dimensions and parcel footprints. Fishing
+positions now use those dimensions and must stay outside parcels and the market;
+the historical x=1..30/y=1..18 bounds below no longer apply to configured maps.
+See How To/map and standard parcels.txt.
+
+Current update: cooking uses species-specific meat Item IDs measured in grams,
+with configurable chopping yield. FishPortion has been removed. See How To/fish meat.txt.
+Earlier phase descriptions below are retained as history.
+
+Fishing locations: river, lake, and sea
+
+Edit RSF.Console/Settings/fishing.json. Species metadata stays in fishTypes:
+name, pricePer500Grams, weight range, and minimumSkillLevel. Locations reference
+those exact species names instead of duplicating prices and weights.
+
+Each locations entry declares:
+  id, name: stable identity and display name
+  waterType: river, lake, or sea
+  x, y: interior free road/water tile, outside farmland and building zones
+  minimumCatchMinutes, maximumCatchMinutes: inclusive wait range for this spot
+  species: available species, referencing fishTypes
+  baitCatchChances: bait IDs with absolute species percentages
+
+Example:
+{
+  "id": "village_lake", "name": "Village Lake", "waterType": "lake",
+  "x": 9, "y": 12, "minimumCatchMinutes": 5, "maximumCatchMinutes": 240,
+  "species": ["Carp", "Perch", "Pike"],
+  "baitCatchChances": {
+    "worm": {"Carp": 25, "Perch": 50, "Pike": 10},
+    "pellet": {"Carp": 45, "Perch": 35, "Pike": 15}
+  }
+}
+
+Each bait table totals at most 100. Remaining probability is no catch; a selected
+species above the fisher's skill is also a miss, without redistributing chances.
+Missing species have zero probability. Omitted bait IDs cannot be used here.
+The existing species list order determines the percentage roll intervals.
+All IDs and species references use exact case.
+
+Starting spots:
+  Village River (4,15): Carp, Catfish, Tilapia
+    worm: 45/30/15; pellet: 60/10/25
+  Village Lake (9,12): Carp, Perch, Pike
+    worm: 25/50/10; pellet: 45/35/15
+  Village Sea Shore (29,17): Mackerel, Sardine, Tuna
+    worm: 50/35/5; pellet: 35/45/15
+All currently wait 5..240 minutes. Pike and Tuna require skill level 2.
+Perch: 200..1200 g, 9 gold/500g. Pike: 1000..6000 g, 15 gold/500g.
+Mackerel: 300..2000 g, 11 gold/500g. Sardine: 100..400 g, 6 gold/500g.
+Tuna: 3000..12000 g, 20 gold/500g. Prices still round up to whole gold.
+Cooking accepts these fish through the existing portion system.
+
+Add another location in JSON, using a unique free position and identity; village
+setup spawns it automatically. This represents fishing spots with reachable
+shore tiles, not large terrain regions, boats, or sea travel. The loader allows
+x=1..30 and y=1..18, excluding existing farmland/building rectangles. Do not
+surround a spot with other Water tiles: NPCs need an accessible adjacent shore.
+The existing pathfinder handles travel and failed routes.
+
+RiverBlueprint and RiverComponent names are preserved. VillageBlueprint reuses
+the existing map tile for each spot, avoiding duplicate coordinates. It builds
+village.Cells after the spots, so pathfinding sees their Water zones. A runtime
+RiverComponent filters shared fish definitions by location.Species and copies
+bait definitions using C# record `with` to replace their catch probabilities.
+The existing commands and FishingSystem then use this table without a second
+fishing system. Debug dumps include location IDs, water types, and bait chances.
+
+The AI considers waters accepting inventory bait and retains existing activity
+scores, continuation bonuses, and travel execution. It does not yet optimize
+bait/location choice by profit or travel cost; equal choices may favor the first
+map spot. This phase does not add a new AI scoring policy.
+
+Compatibility: root timing, baits.catchChances, and fishTypes.catchChancePercent
+remain available for older unassigned/manual waters. Explicit location entries
+use their own timing and baitCatchChances. Empty/omitted locations preserves the
+original single-river village setup. Existing Program.cs is unchanged.
+
+Changed code: FishingLocationDefinition added; RiverComponent,
+RiverBlueprint, VillageBlueprint, BaitRules, GameSettingsLoader, and
+ComponentDebugger extended. fishing.json adds location data and five species.
+
+Validation:
+- Console build passed with 0 errors and the same 20 existing nullable warnings.
+- 3,515 new location checks passed, including every percentage roll across all
+  six location/bait combinations, local timing endpoints, species isolation,
+  unavailable bait rejection, skill locks, prices, map uniqueness, shore routes,
+  JSON validation, and adding a fourth spot through JSON only.
+- 377 regression checks passed: bait 139, fishing 42, pricing/trade 23,
+  processing 70, cooking 76, survival AI 27.
+- Existing Program.cs 15-day simulation completed to Spring Day 16; the fisher
+  caught a Perch through the normal AI workflow. Economic survival is not
+  established by this location feature.
+Temporary checks remain outside the repository; no permanent test project added.

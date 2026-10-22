@@ -1,0 +1,142 @@
+Current update: cooking uses species-specific meat Item IDs measured in grams,
+with configurable chopping yield. FishPortion has been removed. See How To/fish meat.txt.
+Earlier phase descriptions below are retained as history.
+
+Cooking phase 1: shared-style recipes and vegetable demand
+
+Edit RSF.Console/Settings/recipes.json and run:
+  dotnet run --project RSF.Console/RSF.Console.csproj
+The current Program.cs spawn/map/update workflow is unchanged. It currently runs
+five days; this feature does not change the user's chosen simulation duration.
+JSON changes copy to the executable when built. --no-build skips that copy.
+
+Example recipe
+{
+  "id": "cabbage_soup",
+  "name": "Cabbage Soup",
+  "inputs": [
+    { "options": [ { "kind": "Item", "itemId": "cabbage", "quantity": 1 } ] },
+    { "options": [ { "kind": "Spice", "quantity": 1 } ] }
+  ],
+  "tools": ["cooking_utensils"],
+  "processingStation": "kitchen",
+  "processingMinutes": 30,
+  "requiresOperator": true,
+  "requiredSkill": { "id": "cooking", "minimumLevel": 1 },
+  "outputs": [
+    {
+      "options": [
+        {
+          "kind": "Meal",
+          "itemId": "cabbage_soup",
+          "name": "Cabbage Soup",
+          "chancePercent": 100,
+          "minimumQuantity": 2,
+          "maximumQuantity": 2,
+          "hunger": 40,
+          "health": 0
+        }
+      ]
+    }
+  ]
+}
+
+Inputs and alternatives
+Every required input group selects one full option, just like processing.json.
+Alternatives are tried in JSON order with reservations and backtracking, so one
+unit cannot be used for two groups. A selected quantity can span split stacks.
+- Item: a known harvest or processing output itemId, with a positive quantity.
+- FishPortion: quantity counts prepared portions, not whole catches. Omit itemId.
+- Spice: quantity counts existing spice stacks. Omit itemId.
+Meal and Seed are not cooking input kinds in phase 1.
+
+The shared ProcessingRules planner checks every input before anything is consumed.
+Whole fish are counted as obtainable portions during planning and prepared only
+after the whole recipe passes. Only selected fish portions are spent. Unused
+weight stays as portions: a 1200g fish at 500g portion size can supply one portion
+and leave 500g + 200g for later. Missing spices or another ingredient never chops
+or consumes fish. Deposited sale stock and held-tool entities are not ingredients.
+
+Kitchen, tools, and skills
+The existing inn is marked with recipes.json kitchenStationType (kitchen by default).
+Its owner must reach interaction distance before cooking. The cook's existing
+utensils also carry the configured utensilToolId (cooking_utensils), declared in
+processing.json tools. Other required tool IDs use the existing held-tool profiles.
+Tools null or [] means no carried recipe tool is required, separate from the kitchen.
+RequiredSkill uses the same optional id/minimumLevel structure as processing.
+Existing CookingSkillComponent provides cooking level; no new progression is added.
+
+Cooking keeps its established timed batch workflow. requiresOperator must be true
+and processingStation must match the configured inn kitchen. Automatic cooking or
+public multi-kitchen ownership is outside phase 1. Leaving the kitchen or dying
+cancels the existing batch without refunding consumed ingredients, matching the
+previous CookingSystem behavior; cooking has not been moved into ProcessingSystem's
+paused-job lifecycle. Shared schema and input planning do not replace RSF systems.
+
+Output groups
+Each group independently rolls at most one alternative using integer chances.
+Group chances total at most 100; any remainder produces no output from that group.
+A selected Meal option rolls minimumQuantity through maximumQuantity inclusively.
+Every serving is an individual consumable entity with the option's output ID/name
+and hunger/health restoration. Groups may produce multiple meal types; non-Meal
+outputs remain the responsibility of general processing in this phase.
+
+Existing per-serving quality probabilities and multipliers remain unchanged:
+poorChancePercent, goodChancePercent, poorMultiplier, goodMultiplier. Output effects
+are multiplied by that serving's existing quality. Food taste scores, level-based
+quality chances, general cooking XP, dish-specific proficiency, books, and teaching
+are later phases. No experience or levels are awarded here. Meal pricing still uses
+the existing global mealPrice; inherited processing output trade metadata does not
+set a separate food price.
+
+Provided meals
+- Seasoned Rice: 5 rice grains + 1 spice, 30 minutes, 2 servings, base hunger 40.
+- Fish Stew: 1 fish portion + 1 spice, 40 minutes, 1 serving, hunger 45, health 5.
+- Fish Rice: 5 grains + 1 fish portion + 1 spice, 60 minutes, 1 serving,
+  hunger 65, health 10.
+- Cabbage Soup: 1 cabbage + 1 spice, 30 minutes, 2 servings, hunger 40 each.
+- Tomato Soup: 2 tomatoes + 1 spice, 30 minutes, 2 servings, hunger 35 each.
+Default fish recipes retain one meal per portion, including fish below 500g.
+New recipes can be added through JSON using known ingredient IDs and held tools.
+
+Farmland and buying
+Minami's farmPlots is now 9 in npcs.json, assigned through the existing ownership
+mechanism on the existing 24 farmland tiles. Each crop prefers three plots, set by
+preferredPlotsPerFarmer in farming.json. There is no map expansion or scripted work.
+Starting seeds, starting gold, hunger rates, and food prices have not been increased.
+The farmer still replenishes seeds through the processing system when needed.
+Cabbage cookStockTarget is 6 and tomato is 10. Cook AI recognizes every Item option
+in known recipes when buying ingredients, then validates actual full recipe
+combinations before cooking. These targets count existing inventory and do not
+require merchants for local farmer-to-cook sales. Needs and schedules still apply.
+The cook may stock alternative ingredients; inventory policy optimization is not
+part of this phase.
+
+C# and migration notes
+Recipe now inherits the common ProcessingDefinition data fields. This keeps inputs,
+tools, requirements, timing, and output group shapes aligned while CookingSystem
+still owns food creation and the old quality behavior. CookingRules shares access
+and feasibility checks with AI. ProcessingRules now shares spending as well as
+planning, avoiding separate fish/spice reservation logic in each action system.
+Processing recipes continue to support ordinary items and seeds as outputs; Meal
+is accepted only in cooking. Generic processing inputs can also use FishPortion
+and Spice, with the same spending rules.
+
+Old cooking fields ingredients, fish, spices, minutes, servings, hunger, and health
+have been migrated in the delivered JSON. Inputs move into typed options; minutes
+becomes processingMinutes; servings becomes output min/max quantity; effects move
+onto Meal output options. Each recipe now has a stable id, and completed meals store
+the output ItemId separately from the recipe name. Historical examples and old
+checks constructing the former Recipe API need migration; none were deleted.
+
+Validation
+- Core/Console build: zero errors and 20 existing nullable-reference warnings.
+- 76 cooking checks: existing meal effects/servings, vegetables, fish weight and
+  leftover preservation, no partial spending, alternative reservations, tool/skill/
+  kitchen requirements, output probability boundaries, independent groups, quality,
+  invalid JSON, and autonomous farmer-to-cook vegetable sales and soup cooking.
+- Shared processing (70), survival AI (27), and fishing (42) regressions passed:
+  215 checks total. No unsupported old Recipe-schema checks are counted as passing.
+- Existing five-day console simulation completed with autonomous NPCs.
+- Local sales checks supply opening vegetable stock and disable hunger decay to
+  isolate trade/cooking. They prove the behavior, not sustainable long-term balance.

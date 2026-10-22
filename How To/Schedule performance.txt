@@ -1,0 +1,50 @@
+ScheduleSystem performance
+
+ScheduleSystem.Update now queries GetEntitiesWith<ScheduleComponent>() instead
+of visiting every world entity. This reuses the existing component index and
+skips terrain. Only the loop selection and documentation changed; the complete
+loop body, template rules, state revisions, and interval calculations are unchanged.
+Program.cs, JSON settings, and simulation registration are unchanged.
+
+The existing state comparison already preserves work/food preparation while
+the interval, day, template, job, and life stage stay the same. Overnight work
+still belongs to its starting day, so midnight does not restart preparation.
+Job loss, life-stage changes, personal templates, loaded templates, and legacy
+defaults continue through the same selection logic. Schedules remain preferences;
+this system does not execute commands or override urgent needs.
+
+C# foreach visits entities in the ScheduleComponent index. The loop changes
+ScheduleStateComponent, a separate collection, so it can safely enumerate the
+live schedule index. Do not add/remove ScheduleComponent or destroy entities
+inside this loop. Changes between updates are picked up automatically without
+a cache. Query order is not guaranteed; normal schedule evaluation updates each
+NPC independently. Malformed data or sharing a mutable ScheduleState instance
+between NPCs is not a supported way to control update order.
+
+Validation:
+- A temporary simulation workflow exercised stable work preparation, meal
+  boundaries, job loss, baby/adult transitions, personal overnight work across
+  midnight, overnight end boundaries, schedule removal/reattachment, destroyed
+  NPCs, and JSON-loaded template selection. All expectations passed.
+- Existing 95 map/gameplay, 27 survival AI, and 20 profiler checks passed.
+- Source comparison confirmed the complete existing loop body is unchanged.
+- Console build passed with 0 errors and 20 existing nullable warnings.
+  Output used a temporary directory without stopping running applications.
+  No production tests were deleted or new test framework added.
+
+Controlled Debug benchmark: 22,500 empty terrain entities, 480 updates, three
+alternating original/updated pairs after warm-up. Time and membership stayed
+fixed, measuring steady schedule evaluation. Median milliseconds:
+  3 NPCs: original 749.943; updated 0.568.
+  400 NPCs: original 777.503; updated 67.293 (about 11.6 times faster).
+The original source was copied before editing and used for this comparison.
+This is ScheduleSystem only, not the cost of a complete 400-NPC simulation.
+
+One-day village profile: 150x150 map, 3 residents, 1,440 game minutes.
+  Previous run: wall 23,986.26 ms; ScheduleSystem 2,850.64 ms.
+  Current run: wall 19,350.26 ms; ScheduleSystem 25.75 ms.
+Separate full-day samples include random gameplay and runtime variation; the
+whole-run change cannot be attributed solely to schedule selection.
+DeathSystem now leads the profile at 2,173.24 ms and remains future work.
+
+Files changed this phase: ScheduleSystem.cs, this guide, and Schedule profile.txt.

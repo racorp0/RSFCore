@@ -1,0 +1,97 @@
+// Crop growth and harvest only. The farmer prefers three plots of each crop; vegetables have local cook demand.
+{
+  "minimumWorms": 0,
+  "maximumWorms": 10,
+  "plants": [
+    {
+      "id": "rice",
+      "name": "Rice",
+      "type": "Grain",
+      "harvestMode": "Single",
+      "growthDays": 6,
+      "regrowthDays": 1,
+      "growthIntervalMinutes": 1440,
+      "wateringIntervalMinutes": 1440,
+      "seedsPerPlanting": 1,
+      "minimumHarvests": 1,
+      "maximumHarvests": 1,
+      "startingSeedsPerFarmer": 10,
+      "merchantSeeds": 40,
+      "seedStockTarget": 10,
+      "seedPrice": 2,
+      "preferredPlotsPerFarmer": 3,
+      "harvestOutputs": [
+        {
+          "itemId": "harvested_rice",
+          "name": "Harvested Rice Plant",
+          "minimumQuantity": 1,
+          "maximumQuantity": 1,
+          "sellPrice": 1,
+          "merchantStockTarget": 0,
+          "cookStockTarget": 0
+        }
+      ]
+    },
+    {
+      "id": "cabbage",
+      "name": "Cabbage",
+      "type": "Vegetable",
+      "harvestMode": "Single",
+      "growthDays": 4,
+      "regrowthDays": 1,
+      "growthIntervalMinutes": 1440,
+      "wateringIntervalMinutes": 1440,
+      "seedsPerPlanting": 1,
+      "minimumHarvests": 1,
+      "maximumHarvests": 1,
+      "startingSeedsPerFarmer": 10,
+      "merchantSeeds": 20,
+      "seedStockTarget": 10,
+      "seedPrice": 2,
+      "preferredPlotsPerFarmer": 3,
+      "harvestOutputs": [
+        {
+          "itemId": "cabbage",
+            "shelfLifeMinutes": 10080,
+          "name": "Cabbage",
+          "minimumQuantity": 1,
+          "maximumQuantity": 5,
+          "sellPrice": 3,
+          "merchantStockTarget": 10,
+          "cookStockTarget": 6
+        }
+      ]
+    },
+    {
+      "id": "tomato",
+      "name": "Tomato",
+      "type": "Vegetable",
+      "harvestMode": "Repeat",
+      "growthDays": 6,
+      "regrowthDays": 2,
+      "growthIntervalMinutes": 1440,
+      "wateringIntervalMinutes": 1440,
+      "seedsPerPlanting": 1,
+      "minimumHarvests": 3,
+      "maximumHarvests": 6,
+      "startingSeedsPerFarmer": 10,
+      "merchantSeeds": 20,
+      "seedStockTarget": 10,
+      "seedPrice": 2,
+      "preferredPlotsPerFarmer": 3,
+      "harvestOutputs": [
+        {
+          "itemId": "tomato",
+            "shelfLifeMinutes": 7200,
+            "rawFood": { "hunger": 10, "health": 0, "quantityPerServing": 1 },
+          "name": "Tomato",
+          "minimumQuantity": 2,
+          "maximumQuantity": 6,
+          "sellPrice": 3,
+          "merchantStockTarget": 10,
+          "cookStockTarget": 10
+        }
+      ]
+    }
+  ]
+}

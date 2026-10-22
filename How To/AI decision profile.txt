@@ -1,0 +1,29 @@
+Final AI-decision optimization profile, Debug build.
+Normal 150 x 150 map, current three residents, one game day.
+Random gameplay paths, logging, and machine load vary between runs; use the
+paired AI-only benchmark for controlled old/new comparisons.
+
+Workload: 150x150 map; 3 residents; 1440 game minutes; 30818,84 ms wall time.
+System update profile: 30797,18 ms measured; 20 system instances.
+System | Updates | Total ms | Average ms | Maximum ms | Share
+AIActionExecutionSystem | 1440 | 2683,56 | 1,8636 | 10,9030 | 8,7%
+NeedsSystem | 1440 | 2575,17 | 1,7883 | 12,7250 | 8,4%
+SleepSystem | 1440 | 2502,63 | 1,7379 | 16,4514 | 8,1%
+ScheduleSystem | 1440 | 2471,24 | 1,7161 | 13,1903 | 8,0%
+DeathSystem | 1440 | 2067,98 | 1,4361 | 25,8961 | 6,7%
+TravelSystem | 1440 | 1952,33 | 1,3558 | 12,6874 | 6,3%
+StatusEffectSystem | 1440 | 1927,10 | 1,3383 | 12,9680 | 6,3%
+InnSystem | 1440 | 1920,03 | 1,3334 | 19,3050 | 6,2%
+FishingSystem | 1440 | 1845,83 | 1,2818 | 8,3407 | 6,0%
+CookingSystem | 1440 | 1828,22 | 1,2696 | 5,8224 | 5,9%
+FarmingSystem | 1440 | 1737,26 | 1,2064 | 8,8731 | 5,6%
+ProcessingSystem | 1440 | 1594,92 | 1,1076 | 17,9839 | 5,2%
+MerchantVisitSystem | 1440 | 1339,10 | 0,9299 | 8,8504 | 4,3%
+LeaseSystem | 1440 | 1309,66 | 0,9095 | 13,2788 | 4,3%
+CooldownSystem | 1440 | 1141,76 | 0,7929 | 29,1404 | 3,7%
+ManaRegenerationSystem | 1440 | 1112,54 | 0,7726 | 38,7045 | 3,6%
+AIDecisionSystem | 1440 | 623,00 | 0,4326 | 27,2925 | 2,0%
+HungerSystem | 1440 | 147,76 | 0,1026 | 3,6841 | 0,5%
+MovementSystem | 1440 | 15,56 | 0,0108 | 1,5468 | 0,1%
+TimeSystem | 1440 | 1,53 | 0,0011 | 0,1970 | 0,0%
+

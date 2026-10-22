@@ -1,0 +1,53 @@
+InnSystem performance
+
+InnSystem now finds guests and counts occupied beds through the existing
+InnStayComponent index. Ordinary updates no longer scan all map tiles.
+Rent and renewal still read live stays, balances, capacity, and rental expiry.
+The payment calculation, Release method, and exact daily renewal loop are unchanged.
+Program.cs, settings, and simulation registration are unchanged.
+
+Renewal order matters when several expired stays compete for limited capacity.
+The private GetGuests method follows the existing AI executor approach: compare
+indexed guest IDs with the previous set and rebuild a world-ordered list only
+when membership changes. A full world scan is needed on that rebuild, but not
+on every minute with unchanged membership. Equal-count guest replacements are
+detected by checking IDs as well as the count. Removing and reattaching a stay
+does not change its guest's original world order.
+
+List<Entity> is a stable list of guest references, allowing Release to remove an
+InnStay during iteration. HashSet<EntityId> quickly checks membership using RSF's
+existing IDs. Only membership and order are cached; gameplay values stay live.
+Occupancy counts use the live component query and finish before any stay is
+changed, so they do not modify a collection while enumerating it. Current inn
+accounting does not add other guests during Update. This follows the existing
+single-thread simulation lifecycle, without introducing a new event mechanism.
+
+Validation:
+- 304 temporary old/new equivalence and explicit checks passed. Scenarios cover
+  payment failure, owner gold overflow, invalid rent, exact expiry, multi-day
+  catch-up, capacity changes, lost ownership, dead/departing guests, dead owners,
+  missing resident data, destroyed inns/guests, reverse stay attachment order,
+  same-count guest replacements, and releasing/renting between updates.
+- Existing 95 map/gameplay, 27 survival AI, and 20 profiler checks passed.
+- Console build passed with 0 errors and 20 existing nullable warnings.
+  Output used a temporary directory; no running application was stopped.
+- Source diff confirms Release and Pay remain unchanged. No tests were deleted.
+
+Controlled Debug benchmark: 22,500 empty terrain entities, 480 updates, three
+alternating original/updated pairs after warm-up. Paid stays were not yet due.
+Median milliseconds:
+  3 guests: original 996.156; updated 1.128.
+  400 guests: original 1,133.170; updated 87.407 (about 13 times faster).
+This measures steady update selection/validation, not full 400-NPC gameplay or
+renewal throughput. Renewals still count all indexed guests for each due stay;
+large numbers of simultaneous renewals may justify a later separate improvement.
+
+One-day village profile: 150x150 map, 3 residents, 1,440 game minutes.
+  Previous run: wall 25,693.19 ms; InnSystem 3,072.31 ms.
+  Current run: wall 23,986.26 ms; InnSystem 10.90 ms.
+These are separate single samples with runtime/random-gameplay variation.
+The short profile does not exercise infrequent merchant arrivals; rental
+behavior and guest populations are exercised by the focused checks above.
+ScheduleSystem leads the new profile at 2,850.64 ms and remains future work.
+
+Files changed this phase: InnSystem.cs, this guide, and Inn profile.txt.
